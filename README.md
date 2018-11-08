@@ -4,14 +4,11 @@
 
 ## Getting started
 
-### Download
-
-Clone this repo to your local machine using
-
-    git clone https://github.com/visillect/segmentation
-
 ### Installation
 
+Configure and compile the project:
+
+    git clone https://github.com/visillect/segmentation
     mkdir build
     cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
