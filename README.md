@@ -6,14 +6,14 @@
 
 ### Download
 
-  git clone https://github.com/visillect/segmentation
+    git clone https://github.com/visillect/segmentation
 
 ### Installation
 
-  mkdir build
-  cd build
-  cmake .. -DCMAKE_BUILD_TYPE=Release
-  make 
+    mkdir build
+    cd build
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+    make 
 
 ### Usage Example
 
