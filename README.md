@@ -6,6 +6,8 @@
 
 ### Download
 
+Clone this repo to your local machine using
+
     git clone https://github.com/visillect/segmentation
 
 ### Installation
@@ -17,9 +19,9 @@
 
 ## Image Segmentation Libraries 
 
-[remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) - region adgacency graph (RAG) framework 
+[remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) -- region adgacency graph (RAG) framework 
 
-[colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) - color-based segmentation
+[colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) -- color-based segmentation
 
 ## Support
 
