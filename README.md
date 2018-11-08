@@ -15,8 +15,6 @@
     cmake .. -DCMAKE_BUILD_TYPE=Release
     make 
 
-### Usage Example
-
 ## Image Segmentation Libraries 
 
 [remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) - region adgacency graph (RAG) framework 
