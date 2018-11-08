@@ -1,5 +1,28 @@
 # A collection of C++ libraries for image segmentation
 
+## About
+
+## Getting started
+
+### Download
+
+  git clone https://github.com/visillect/segmentation
+
+### Installation
+
+  mkdir build
+  cd build
+  cmake .. -DCMAKE_BUILD_TYPE=Release
+  make 
+
+### Usage Example
+
+## Image Segmentation Libraries 
+
+[remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) - region adgacency graph (RAG) framework 
+
+[colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) - color-based segmentation
+
 ## Support
 
 Please, use the GitHub issue tracker at https://github.com/Visillect/segmentation for bug reports, feature requests/additions, etc.
