@@ -1,0 +1,73 @@
+/* Define to 1 if you have the <assert.h> header file. */
+#cmakedefine HAVE_ASSERT_H 1
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#cmakedefine HAVE_FCNTL_H 1
+
+/* Define to 1 if you have the `lfind' function. */
+#cmakedefine HAVE_LFIND
+
+/* Define as 0 or 1 according to the floating point format suported by the
+   machine */
+#define HAVE_IEEEFP 1
+
+/* Define to 1 if you have the `jbg_newlen' function. */
+#cmakedefine HAVE_JBG_NEWLEN
+
+/* Define to 1 if you have the <string.h> header file. */
+#cmakedefine HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#cmakedefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file */
+#cmakedefine HAVE_UNISTD_H
+
+/* Define to 1 if you have the <io.h> header file. */
+#cmakedefine HAVE_IO_H
+
+/* Define to 1 if you have the <search.h> header file. */
+#cmakedefine HAVE_SEARCH_H
+
+/* Define to 1 if you have the <limits.h> header file. */
+#define HAVE_LIMITS_H 1
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#define HAVE_MALLOC_H 1
+
+/* Define to 1 if you have the `setmode' function. */
+#cmakedefine HAVE_SETMODE 1
+
+/* The size of a `int', as computed by sizeof. */
+#define SIZEOF_INT @SIZEOF_INT@
+
+/* The size of a `long', as computed by sizeof. */
+#define SIZEOF_LONG @SIZEOF_LONG@
+
+
+#ifdef _MSC_VER
+/* Signed 64-bit type */
+#define TIFF_INT64_T signed __int64
+/* Unsigned 64-bit type */
+#define TIFF_UINT64_T unsigned __int64
+#else
+/* Signed 64-bit type */
+#define TIFF_INT64_T long long
+/* Signed 64-bit type */
+#define TIFF_UINT64_T unsigned long long
+#endif
+
+/* Set the native cpu bit order */
+#define HOST_FILLORDER FILLORDER_LSB2MSB
+
+/* Define to 1 if your processor stores words with the most significant byte
+   first (like Motorola and SPARC, unlike Intel and VAX). */
+/* #undef WORDS_BIGENDIAN */
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+# ifndef inline
+#  define inline __inline
+# endif
+#endif

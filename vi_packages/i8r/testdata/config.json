@@ -1,0 +1,25 @@
+{
+	"default": { 
+		"fps": 5
+	},
+	"kinds": {
+		"lg": {
+			"type": "image_dir",
+			"frame_size": [640, 480],
+			"do_downscale": true,
+			"is_vertical": true
+		},
+		"gen": {
+			"type": "group",
+			"group": "lg"
+		},
+		"lines": {
+			"type": "group",
+			"group": "lg"
+		}
+	},
+	"streams": {
+		"info": "disabled"
+	}
+
+}

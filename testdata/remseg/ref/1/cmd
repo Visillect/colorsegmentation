@@ -1,0 +1,1 @@
+./ranged_merge --d0 1.0 --d1 0.5 --d2 0.5 --t0 1500 --t1 0 --t2 0 /home/anna/projects/visillect/segmentation-dev/markup/IITP_color_segmentation/FAN\&BALL.JPG -s

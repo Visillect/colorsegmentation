@@ -1,0 +1,56 @@
+MINBASE Changelog
+
+
+Version 0.0.4
+15-Apr-2017
+
+
++++ New functionality:
+
++ Added namespace minstd for proxying c++11 functionality that is
+implementable in c++03.
+
++ Added the following functionality into namespace minstd: integral_constant,
+true_type, false_type, is_same, enable_if.
+
++ Added uint1_t type for template dispatching.
+
+
+*** Functionality changes:
+
+* Separated C and C++ warnings in include guards.
+
+* Separated warnings in include guards for different versions of gcc: 4.8,
+4.9, 5, 6.
+
+
+### Fixed bugs:
+
+# Fixed definition of IMPLANT_PRAGMA macro under MSVS.
+
+
+
+
+
+Version 0.0.3
+08-Apr-2016
+
+
+### Fixed bugs
+
+# Fixed build under MS Visual Studio.
+
+
+
+
+
+Version 0.0.2
+04-Apr-2016
+
+
+*** Functionality changes:
+
+* Headers minimgbase.h and mingeobase.h renamed to minimg.h and mingeo.h, respectively.
+
+* Some slight cosmetic changes.
+

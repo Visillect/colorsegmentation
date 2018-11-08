@@ -1,0 +1,13 @@
+MINGEO Changelog
+
+
+Version 0.0.2
+04-Apr-2016
+
+
+*** Functionality changes:
+
+* Changed includes for compatibility with minbase-0.0.2.
+
+* Some slight cosmetic changes.
+

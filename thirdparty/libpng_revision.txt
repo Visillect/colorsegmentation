@@ -1,0 +1,2 @@
+13499
+https://vis.iitp.ru/svn/se/thirdparty/libpng/tags/1_5_10beta01
