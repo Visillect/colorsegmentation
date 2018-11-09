@@ -1,2 +1,0 @@
-27070
-https://vis.iitp.ru/svn/se/packages/minutils/trunk@28189

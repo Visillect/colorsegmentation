@@ -1,2 +1,0 @@
-12445
-https://vis.iitp.ru/svn/vi/packages/remseg/trunk@12445

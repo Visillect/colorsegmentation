@@ -1,2 +1,0 @@
-2044
-https://vis.iitp.ru/svn/vi/thirdparty/valijson/tags/a1d330e285.patched

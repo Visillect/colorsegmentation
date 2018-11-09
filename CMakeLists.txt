@@ -36,7 +36,6 @@ include(cmake/compiler.cmake)
 include(cmake/options.cmake)
 include(cmake/arch.cmake)
 include(cmake/func_macro.cmake)
-include(cmake/svn_external.cmake)
 
 # global include directories
 include_directories(vi_packages)
@@ -45,14 +44,6 @@ include_directories(minsubsystem)
 include_directories(thirdparty)
 # include_directories(tools)
 # include_directories(sandbox)
-
-# Sort of ad-hoc include paths.
-# include_directories(prj.thirdparty/tbb/include)
-# include_directories(prj.thirdparty/protobuf/src)
-# include_directories(prj.thirdparty/yajl/src/api)
-# include_directories(prj.thirdparty/zlib/src)
-# include_directories(prj.thirdparty/gtest)
-# include_directories(${CMAKE_CURRENT_BINARY_DIR}/prj.thirdparty/yajl/include)
 
 # output directories
 set(SEGM_BINARY_PATH ${CMAKE_BINARY_DIR}/segmentation)

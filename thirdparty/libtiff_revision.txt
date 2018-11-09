@@ -1,2 +1,0 @@
-21880
-https://vis.iitp.ru/svn/se/thirdparty/libtiff/tags/3_9_5

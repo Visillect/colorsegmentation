@@ -1,2 +1,0 @@
-26830
-https://vis.iitp.ru/svn/se/packages/minbase/trunk@28189

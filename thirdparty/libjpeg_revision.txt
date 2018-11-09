@@ -1,2 +1,0 @@
-13732
-https://vis.iitp.ru/svn/se/thirdparty/libjpeg/tags/8c

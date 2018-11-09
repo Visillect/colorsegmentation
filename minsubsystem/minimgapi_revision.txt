@@ -1,2 +1,0 @@
-28004
-https://vis.iitp.ru/svn/se/packages/minimgapi/trunk@28189
