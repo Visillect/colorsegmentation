@@ -8,7 +8,7 @@
 
 Configure and compile the project:
 
-    git clone https://github.com/visillect/segmentation
+    git clone https://github.com/Visillect/segmentation
     mkdir build
     cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
