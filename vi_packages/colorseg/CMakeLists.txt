@@ -29,9 +29,3 @@ target_link_libraries(colorseg_go
   ${Boost_LIBRARIES}
   ${OpenCV_LIBS}
   colorseg)
-
-add_executable(obtain_blocklist demo/obtain_blocklist.cpp)
-target_link_libraries(obtain_blocklist
-  ${Boost_LIBRARIES}
-  ${OpenCV_LIBS}
-  colorseg)

@@ -38,7 +38,6 @@ either expressed or implied, of copyright holders.
 #include <cstring>
 #include <stack>
 #include <unordered_map>
-#include <iostream>
 #include <cassert>
 
 namespace vi { namespace remseg {

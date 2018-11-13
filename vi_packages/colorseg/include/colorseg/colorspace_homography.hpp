@@ -33,7 +33,8 @@ either expressed or implied, of copyright holders.
 #include <cassert>
 #include <cmath>
 #include <algorithm>
-#include <iostream>
+
+#include <colorseg/color_vertex.h>
 
 THIRDPARTY_INCLUDES_BEGIN
 #include <Eigen/Dense>
@@ -41,29 +42,7 @@ THIRDPARTY_INCLUDES_END
 
 namespace vi { namespace colorseg {
 
-const double default_a = 0.0;
-const double default_k = 0;
-
-inline void RGB2LAlphaBeta(double * lab, uint8_t const * rgb)
-{
-  double R = rgb[0], G = rgb[1], B = rgb[2];
-
-  lab[0] = 1. / std::sqrt(3.) * ((double)R + (double)G + (double)B);
-  lab[1] = 1. / std::sqrt(2.) * ((double)R - (double)G);
-  lab[2] = 1. / std::sqrt(6.) * (2 * (double)B - (double)G - (double)R);
-}
-
-inline void LAlphaBeta2RGB(double * rgb, double const * lab)
-{
-  double L = lab[0], alpha = lab[1], beta = lab[2];
-
-  rgb[0] = 1. / std::sqrt(6) * (std::sqrt(2.) * L + std::sqrt(3) * alpha - beta);
-  rgb[1] = 1. / std::sqrt(6) * (std::sqrt(2.) * L - std::sqrt(3) * alpha - beta);
-  rgb[2] = - 2 * rgb[1] + std::sqrt(3) * L - std::sqrt(2) *  alpha;
-}
-
-inline Eigen::Vector3d Konovalenko2RGB(Eigen::Vector3d const & src,
-                                       double k = default_k, double a = default_a)
+inline Eigen::Vector3d homographyInv(Eigen::Vector3d const & src, double a, double k)
 {
   double EPS = 1.e-5;
   assert(k > -EPS);
@@ -98,8 +77,7 @@ inline Eigen::Vector3d Konovalenko2RGB(Eigen::Vector3d const & src,
   return Eigen::Vector3d(dst_vec[0], dst_vec[1], dst_vec[2]);
 }
 
-inline void RGB2Konovalenko(double * dst, uint8_t const * src,
-                            double k = default_k, double a = default_a)
+inline void homography(double * dst, uint8_t const * src, double a, double k)
 {
   double EPS = 1.e-5;
   assert(k > -EPS);
@@ -130,12 +108,6 @@ inline void RGB2Konovalenko(double * dst, uint8_t const * src,
     for (int i = 0; i < 3; i++)
       dst_vec[i] = (dst_vec[i] / dst_vec[3]) * 255;
   }
-//  if (src_vec.mean() * 255 > 240 )
- //   std::cout << src_vec.mean() * 255 << " " << std::sqrt(dst[0]*dst[0] + dst[1]*dst[1]+dst[2]*dst[2])*255 << std::endl;
-
-  // std::cout << src_vec * 255 << " " << Konovalenko2RGB(Eigen::Vector3d(dst_vec[0], dst_vec[1], dst_vec[2]))
-  //          << std::endl;
-  //   std::cout << std::endl;
 
   dst[0] = dst_vec[0];
   dst[1] = dst_vec[1];

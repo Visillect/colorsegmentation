@@ -336,12 +336,12 @@ Segmentator<T>::Segmentator(const Image &image,
   , blocking_policy(_blocking_policy)
   , normalize(_normalize)
 {
-  imageMap = new ImageMap(_imageMap);
+  imageMap = new ImageMap(image.getWidth(), image.getHeight());
 
-  if (imageMap->getWidth() != image.getWidth() || imageMap->getHeight() != image.getHeight())
+  if (_imageMap.getWidth() != image.getWidth() || _imageMap.getHeight() != image.getHeight())
     throw std::runtime_error("ImageMap size is inconsistent with image");
 
-  createAdjacencyGraph(image, *imageMap);
+  createAdjacencyGraph(image, _imageMap);
 }
 
 template<typename T>
@@ -380,28 +380,38 @@ void Segmentator<T>::createAdjacencyGraph(const Image &image)
 
 template<typename T>
 void Segmentator<T>::createAdjacencyGraph(const Image &image,
-                                          const ImageMap & imageMap)
+                                          const ImageMap & _imageMap)
 {
-  auto const stats = imageMap.getSegmentStats();
+  auto const stats = _imageMap.getSegmentStats();
+  std::map<SegmentID, SegmentID> id_to_idx;
+  SegmentID idx = 0;
+  for (auto const & stat : stats)
+  {
+    id_to_idx[stat.first] = idx;
+    idx++;
+  }
+
   int edgesNum = sumNeighboursNum(stats);
   vertexNum = stats.size();
 
   initialize(vertexNum, edgesNum);
-
   for (auto const & stat : stats)
   {
-    SegmentID id = stat.first;
+    idx = id_to_idx[stat.first];
     auto rect = stat.second.rect;
 
-    T *v = vertices + id;
+    T *v = vertices + idx;
 
     for (int i = rect.y; i < rect.y + rect.height; ++i)
+    {
       for (int j = rect.x; j < rect.x + rect.width; ++j)
       {
-        if (imageMap.getSegment(j, i) != id)
+        if (_imageMap.getSegment(j, i) != stat.first)
           continue;
         v->update(image.getPixel(j, i));
+        (*imageMap)(j,i) = idx;
       }
+    }
 
     if (std::find(blockList.begin(), blockList.end(), stat.second.leftTopPoint) != blockList.end())
         v->isBlocked = true;
@@ -411,46 +421,44 @@ void Segmentator<T>::createAdjacencyGraph(const Image &image,
 
   for (auto const & stat : stats)
   {
-    SegmentID id = stat.first;
-    T *v = vertices + id;
+    idx = id_to_idx[stat.first];
+    T *v = vertices + idx;
 
     if (v->isBlocked)
       continue;
 
     for (auto const & n : stat.second.neighbours)
     {
-      if (id >= n)
+      if (idx >= id_to_idx[n])
         continue; // call connect() only once for each pair
-      if ((vertices + n)->isBlocked)
+      if ((vertices + id_to_idx[n])->isBlocked)
         continue;
-      connect(v, vertices + n, true);
+      connect(v, vertices + id_to_idx[n], true);
     }
   }
 
   for (auto const & stat : stats)
   {
-    SegmentID id = stat.first;
-    T *v = vertices + id;
+    idx = id_to_idx[stat.first];
+    T *v = vertices + idx;
 
     if (v->isBlocked)
       continue;
 
     for (auto const & n : stat.second.neighbours)
     {
-      if (id >= n)
+      if (idx >=id_to_idx[n])
         continue; // call connect() only once for each pair
-      if ((vertices + n)->isBlocked)
+      if ((vertices + id_to_idx[n])->isBlocked)
         continue;
       for (Joint it = v->begin(); it != v->end(); it++)
-        if (it->vertex == (vertices + n))
+        if (it->vertex == (vertices + id_to_idx[n]))
         {
-          edgeHeap->update(it->edge, distance_function(v, vertices + n));
+          edgeHeap->update(it->edge, distance_function(v, vertices + id_to_idx[n]));
           break;
         }
     }
   }
-
-
 //  LOG_INFO("Adjacency graph created (" << imageMap.getWidth() * imageMap.getHeight()
 //                                       << " vertices, " << edgesNum << " edges)");
 }
@@ -651,16 +659,6 @@ void Segmentator<T>::merge(T *absorbent, T *v)
     max_neighbours = absorbent->size();
   if (v->size() > max_neighbours)
     max_neighbours = v->size();
-
-
-  // if (getId(dynamic_cast<T*>(v)) == 13)
-  //     std::cout   << v->size() << " neighbours of neighbour, " << v->area << std::endl;
-
-  // if (getId(dynamic_cast<T*>(absorbent)) == 13)
-  //     std::cout   << absorbent->size() << " neighbours of neighbour, " << absorbent->area << std::endl;
-
-
-
 
   bool connected = false;	// были ли соединены v и absorbent? (нужно для выявления ошибок)
   absorbent->absorb(v);

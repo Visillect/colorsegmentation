@@ -48,7 +48,6 @@ using namespace remseg;
 
 namespace colorseg {
 
-
 class ColorVertex : public Vertex
 {
 public:
@@ -82,23 +81,22 @@ public:
 
   Json::Value jsonLog() const override;
 
-  static double getKonovalenkoCompression() { return KonovalenkoCompression; }
-  static void setKonovalenkoCompression(double d) { KonovalenkoCompression = d; }
+  static double getHomographyA() { return homographyA; }
+  static double getHomographyK() { return homographyK; }
+  static void setHomographyA(double d) { homographyA = d; }
+  static void setHomographyK(double d) { homographyK = d; }
 
-  static double getMaxModelDistance() { return MaxModelDistance; }
-  static void setMaxModelDistance(double d) { MaxModelDistance = d; }
-
-  static double getGlareThresh() { return GlareThresh; }
-  static void setGlareThresh(double d) { GlareThresh = d; }
+  static double getMaxModelDistance() { return maxModelDistance; }
+  static void setMaxModelDistance(double d) { maxModelDistance = d; }
 
 private:
   mutable HelperStats helperStats;
 
   mutable bool needToUpdate;
 
-  static double KonovalenkoCompression;
-  static double MaxModelDistance;
-  static double GlareThresh;
+  static double homographyA;
+  static double homographyK;
+  static double maxModelDistance;
 
   void updateHelperStats() const;
 };

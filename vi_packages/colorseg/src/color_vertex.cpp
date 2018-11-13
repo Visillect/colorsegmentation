@@ -31,17 +31,15 @@ either expressed or implied, of copyright holders.
 
 
 #include <colorseg/color_vertex.h>
-
-#include <colorseg/colorspace_transform.h>
+#include <colorseg/colorspace_homography.hpp>
 
 #include <cmath>
-#include <iostream>
 
 namespace vi { namespace colorseg {
 
-double ColorVertex::KonovalenkoCompression = 2.0;
-double ColorVertex::MaxModelDistance = 20;
-double ColorVertex::GlareThresh = 230;
+double ColorVertex::homographyA = 0.0;
+double ColorVertex::homographyK = 3.0;
+double ColorVertex::maxModelDistance = 20;
 
 ColorVertex::ColorVertex(const ColorVertex* v)
 : Vertex(v)
@@ -83,9 +81,7 @@ void ColorVertex::Initialize(int _channelsNum)
 void ColorVertex::update(const uint8_t * pix)
 {
   double pixd[3] = {(double)pix[0], (double)pix[1], (double)pix[2]};
-  RGB2Konovalenko(pixd, pix);
-  // RGB2LAlphaBeta(pixd, pix);
-  // pixd[0] /= 2;
+  homography(pixd, pix, homographyA, homographyK);
   Vertex::update(pixd);
 
 	Eigen::Vector3d pix_vec(pixd[0], pixd[1], pixd[2]);
@@ -133,10 +129,7 @@ void ColorVertex::updateHelperStats() const
   }
 
   // calculate eigen vectors
-
   hs.eigSolver.compute(hs.covariance);
-
-
   needToUpdate = false;
 }
 
