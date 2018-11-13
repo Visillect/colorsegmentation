@@ -1,28 +1,22 @@
 treat_warnings_as_errors()
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0.0)
 
 project(colorseg)
 
 find_package(OpenCV REQUIRED)
-include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
-
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
-set(HEADERS
-  color_distance_func.h
-  color_vertex.h
-  colorspace_transform.h
-)
-
-set(SOURCES
+add_library(colorseg
   src/color_distance_func.cpp
   src/color_vertex.cpp
 )
 
-add_library(colorseg
-  ${HEADERS}
-  ${SOURCES}
+target_include_directories(remseg
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE
+    ${PROJECT_BINARY_DIR}
 )
 
 target_link_libraries(colorseg

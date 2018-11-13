@@ -1,20 +1,10 @@
 treat_warnings_as_errors()
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0.0)
 
 project(remseg)
 
-set(HEADERS
-  distance_func.h
-  edge_heap.h
-  image_map.h
-  image.h
-  segmentator.hpp
-  vertex.h
-  utils.h
-)
-
-set(SOURCES
+add_library(remseg
   src/distance_func.cpp
   src/edge_heap.cpp
   src/image_map.cpp
@@ -23,19 +13,21 @@ set(SOURCES
   src/utils.cpp
 )
 
-add_library(remseg
-  ${HEADERS}
-  ${SOURCES}
+target_include_directories(remseg
+  PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+  PRIVATE
+    ${PROJECT_BINARY_DIR}
 )
 
 target_link_libraries(remseg
-  minbase
-  mingeo
-  minimgapi
-  minimgio
-  i8r
-  validate_json
-  vi_cvt
+    minbase
+    mingeo
+    minimgapi
+    minimgio
+    i8r
+    validate_json
+    vi_cvt
 )
 
 #----------------demo---------------------------------------

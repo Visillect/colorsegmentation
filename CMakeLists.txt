@@ -1,7 +1,7 @@
 ## Copyright (c) 2017, Visillect Service LLC. All rights reserved.
 ##
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0.0)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "possible build types" FORCE)
 
