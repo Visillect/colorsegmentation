@@ -6,7 +6,10 @@
 
 ### Installation
 
-Configure and compile the project:
+Practically, the code is not platform specific but it is tested only on Linux.
+The official support is curently provided only for Linux too. 
+
+To configure and compile the project run the following command:
 
     git clone https://github.com/Visillect/segmentation
     mkdir build
