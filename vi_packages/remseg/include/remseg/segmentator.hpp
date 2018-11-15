@@ -145,7 +145,7 @@ public:
   bool dumpAllSegments(const char *fileName, const Image &image);
 
   const ImageMap &getImageMap() const { return *imageMap; }
-  SegmentID getId(T *v) const { return v - vertices; }
+  SegmentID getId(Vertex *v) const { return reinterpret_cast<T*>(v) - reinterpret_cast<T*>(vertices); }
 
   bool isEmpty() const { return vertices == 0 or edgeHeap == 0; }
   bool isConsistent() const { return edgeHeap->isConsistent(); }

@@ -85,7 +85,7 @@ void offscaleFix(Segmentator<ColorVertex> & segmentator, double threshold)
 
     if (v->size() == 1)
     {
-      merged.insert(segmentator.getId(dynamic_cast<ColorVertex*>(v->begin()->vertex)));
+      merged.insert(segmentator.getId(v->begin()->vertex));
       segmentator.merge(v, dynamic_cast<ColorVertex*>(v->begin()->vertex));
     }
     else
@@ -96,7 +96,7 @@ void offscaleFix(Segmentator<ColorVertex> & segmentator, double threshold)
       std::set<int> merged_ids;
 
       for (ConstJoint it = v->begin(); it != v->end(); it++)
-        ids.push_back(segmentator.getId(dynamic_cast<ColorVertex*>(it->vertex)));
+        ids.push_back(segmentator.getId(it->vertex));
 
       for (auto it1 = ids.begin(); it1 != ids.end(); it1++)
       {
