@@ -259,7 +259,7 @@ void Segmentator<T>::updateMapping(bool check_neighbours)
       v = vertices + id;
 
       assert(v);
-      if ( (finalAbsorbent = dynamic_cast<T*>(v->getFinalAbsorbent())) )
+      if ( (finalAbsorbent = reinterpret_cast<T*>(v->getFinalAbsorbent())) )
       {
         (*imageMap)(i,j) = getId(finalAbsorbent);
         n++;
@@ -493,14 +493,14 @@ void Segmentator<T>::mergeNext(bool do_update_mapping)
 
   if (mergeLogStream)
   {
-    int a = getId(dynamic_cast<T*>(topEdge->a));
-    int b = getId(dynamic_cast<T*>(topEdge->b));
+    int a = getId(reinterpret_cast<T*>(topEdge->a));
+    int b = getId(reinterpret_cast<T*>(topEdge->b));
     mergeLogStream->write(reinterpret_cast<const char*>(&a), sizeof(a));
     mergeLogStream->write(reinterpret_cast<const char*>(&b), sizeof(b));
   }
 
-  T* v1 = dynamic_cast<T*>(topEdge->a);
-  T* v2 = dynamic_cast<T*>(topEdge->b);
+  T* v1 = reinterpret_cast<T*>(topEdge->a);
+  T* v2 = reinterpret_cast<T*>(topEdge->b);
   if (v1->area > v2->area)
     merge(v1, v2);
   else
@@ -666,7 +666,7 @@ void Segmentator<T>::merge(T *absorbent, T *v)
   EdgeValue dist = -1;
 
   for (Joint it = absorbent->begin(); it != absorbent->end(); it++)    // помечаем соседей absorbent для последующего выявления дублей
-    mergeAuxArray[getId(dynamic_cast<T*>(it->vertex))] = stepNumber;
+    mergeAuxArray[getId(reinterpret_cast<T*>(it->vertex))] = stepNumber;
 
 
   for (Joint it = v->begin(); it != v->end();)
@@ -685,7 +685,7 @@ void Segmentator<T>::merge(T *absorbent, T *v)
     else
     {
       // (2)
-      if (mergeAuxArray[getId(dynamic_cast<T*>(it->vertex))] == stepNumber)
+      if (mergeAuxArray[getId(reinterpret_cast<T*>(it->vertex))] == stepNumber)
       {
         it->vertex->erase(it->joint);	// удаление v из общей вершины
         edgeHeap->remove(it->edge);
@@ -713,7 +713,7 @@ void Segmentator<T>::merge(T *absorbent, T *v)
 
   // пересчет весов ребер absorbent
   for (Joint it = absorbent->begin(); it != absorbent->end(); it++)
-    edgeHeap->update(it->edge, distance_function(absorbent, dynamic_cast<T*>(it->vertex)));
+    edgeHeap->update(it->edge, distance_function(absorbent, reinterpret_cast<T*>(it->vertex)));
 
   	// LOG_INFO(absorbent-vertices << " has absorbed " << v-vertices << " (distance " << dist << ")");
 
