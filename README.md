@@ -18,7 +18,6 @@ First, install `libjsocpp-dev` package, for example, in Ubuntu run
 
 To configure and compile the project run the following command:
 
-
     git clone https://github.com/Visillect/segmentation
     mkdir build
     cd build
@@ -26,6 +25,9 @@ To configure and compile the project run the following command:
     make 
     
 ### Image data stucture manipulations
+
+For manipalutions with images the `MinImg` data structure is used provided in 
+[minsubsystem](https://github.com/Visillect/segmentation/tree/master/minsubsystem) libraries. 
 
 For compatility with [OpenCV](https://www.opencv.org/) image types the [vi_cvt](https://github.com/Visillect/segmentation/tree/master/vi_packages/vi_cvt) package is provided.
 
@@ -37,7 +39,7 @@ The convertion from OpenCV `cv::Mat` to `MinImg` could be done as
     ...
     MinImg min_image = vi::cvt::ocv::as_minimg(cv_image);
 
-and to convert `MinImg` to `cv::Mat` use
+To convert `MinImg` to `cv::Mat` use
 
     MinImage* min_image = ...
     ...
