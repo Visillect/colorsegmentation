@@ -1,6 +1,10 @@
 # A collection of C++ libraries for image segmentation
 
-## About
+Here we publish a set of image segmentation libraries developed for research in a [Vision System Laboratory at IITP RAS](http://iitp.ru/en/researchlabs/281.htm). Currently this not very big collection includes the following:
+
+* [remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) — region adgacency graph (RAG) framework 
+
+* [colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) — color-based segmentation
 
 ## Getting started
 
@@ -16,13 +20,7 @@ To configure and compile the project run the following command:
     cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
     make 
-
-## Image Segmentation Libraries 
-
-[remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) — region adgacency graph (RAG) framework 
-
-[colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) — color-based segmentation
-
+    
 ## Support
 
 Please, use the GitHub issue tracker at https://github.com/Visillect/segmentation for bug reports, feature requests, etc.
