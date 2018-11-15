@@ -1,6 +1,6 @@
 # A collection of C++ libraries for image segmentation
 
-Here we publish a set of image segmentation libraries developed for research in a [Vision System Laboratory at IITP RAS](http://iitp.ru/en/researchlabs/281.htm). Currently this not very big collection includes the following:
+Here we publish a set of image segmentation libraries developed for the research in a [Vision System Laboratory at IITP RAS](http://iitp.ru/en/researchlabs/281.htm). Currently this not very big collection includes the following:
 
 * [remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) — region adgacency graph (RAG) framework 
 * [colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) — color-based segmentation
@@ -19,6 +19,26 @@ To configure and compile the project run the following command:
     cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
     make 
+    
+### Image data stucture manipulations
+
+For compatility with [OpenCV](https://www.opencv.org/) image types the [vi_cvt](https://github.com/Visillect/segmentation/tree/master/vi_packages/vi_cvt) package is provided.
+
+The convertion from OpenCV `cv::Mat` to `MinImg` could be done as
+
+    #include <vi_oct/ocv.h>
+    
+    cv::Mat cv_image = ...
+    ...
+    MinImg min_image = vi::cvt::ocv::as_minimg(cv_image);
+
+and to convert `MinImg` to `cv::Mat` use
+
+    MinImage* min_image = ...
+    ...
+    cv::Mat cv_image = vi::cvt::ocv::as_cv_mat(min_image);
+   
+Also, for `MinImg` smart pointers wrappers are provided in [mximg](https://github.com/Visillect/segmentation/tree/master/vi_packages/mximg) package.
     
 ## Support
 
