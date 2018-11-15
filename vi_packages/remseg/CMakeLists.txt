@@ -7,11 +7,11 @@ project(remseg)
 find_package(OpenCV REQUIRED)
 
 add_library(remseg
-  src/distance_func.cpp
   src/edge_heap.cpp
   src/image_map.cpp
   src/vertex.cpp
   src/utils.cpp
+  src/weight_func.cpp
 )
 
 target_include_directories(remseg

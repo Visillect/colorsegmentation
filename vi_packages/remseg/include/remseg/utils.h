@@ -42,14 +42,14 @@ either expressed or implied, of copyright holders.
 namespace vi { namespace remseg {
 
 void visualize(MinImg * imgres, ImageMap const & imageMap,
-               std::set<std::pair<int, int> > const & blocklist = {});
+               std::set<std::pair<int, int> > const & lockList = {});
 
-void readBlockList(std::set<std::pair<int, int> > & blockList,
-                   bool & blockingPolicy,
+void readLockList(std::set<std::pair<int, int> > & lockList,
+                   bool & lockingPolicy,
                    std::string const & filename);
 
-void saveBlockList(std::string const & filename,
-                   std::set<std::pair<int, int> > const & blockList,
-                   bool blockingPolicy);
+void saveLockList(std::string const & filename,
+                  std::set<std::pair<int, int> > const & lockList,
+                  bool lockingPolicy);
 
 }} // ns vi::remseg

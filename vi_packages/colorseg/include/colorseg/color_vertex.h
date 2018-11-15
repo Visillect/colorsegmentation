@@ -86,8 +86,8 @@ public:
   static void setHomographyA(float f) { homographyA = f; }
   static void setHomographyK(float f) { homographyK = f; }
 
-  static float getMaxModelDistance() { return maxModelDistance; }
-  static void setMaxModelDistance(float f) { maxModelDistance = f; }
+  static float getLTDistance() { return LTDistance; }
+  static void setLTDistance(float f) { LTDistance = f; }
 
 private:
   mutable HelperStats helperStats;
@@ -96,7 +96,7 @@ private:
 
   static float homographyA;
   static float homographyK;
-  static float maxModelDistance;
+  static float LTDistance;
 
   void updateHelperStats() const;
 };

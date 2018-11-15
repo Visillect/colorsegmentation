@@ -30,6 +30,8 @@ either expressed or implied, of copyright holders.
 */
 
 
+#pragma once
+
 #include <cassert>
 #include <cmath>
 #include <algorithm>
@@ -42,14 +44,15 @@ THIRDPARTY_INCLUDES_END
 
 namespace vi { namespace colorseg {
 
-inline Eigen::Vector3d homographyInv(Eigen::Vector3d const & src, float a, float k)
+inline Eigen::Matrix<float, 4, 4> homographyMatrix()
 {
+  float a = ColorVertex::getHomographyA();
+  float k = ColorVertex::getHomographyK();
+
   float EPS = 1.e-5;
   assert(k > -EPS);
   assert(a > -EPS);
   assert(a < 1 + EPS);
-
-  Eigen::Vector4f src_vec(src[0] / 255, src[1] / 255, src[2] / 255, 1);
 
   Eigen::Matrix<float, 4, 4> H = Eigen::MatrixXf::Identity(4, 4);
   for (int i = 0; i < 3; ++i)
@@ -65,7 +68,15 @@ inline Eigen::Vector3d homographyInv(Eigen::Vector3d const & src, float a, float
         if (i != j)
             A(i, j) = a;
 
-  Eigen::Matrix<float, 4, 4> P = A * S * H;
+  return A * S * H;
+}
+
+inline Eigen::Vector3d homographyInv(Eigen::Vector3d const & src)
+{
+  float EPS = 1.e-5;
+
+  Eigen::Vector4f src_vec(src[0] / 255, src[1] / 255, src[2] / 255, 1);
+  auto P = homographyMatrix();
   Eigen::Vector4f dst_vec = P.inverse() * src_vec;
 
   if (std::abs(dst_vec[3]) >= EPS)
@@ -77,30 +88,12 @@ inline Eigen::Vector3d homographyInv(Eigen::Vector3d const & src, float a, float
   return Eigen::Vector3d(dst_vec[0], dst_vec[1], dst_vec[2]);
 }
 
-inline void homography(float * dst, float const * src, float a, float k)
+inline void homography(float * dst, float const * src)
 {
   float EPS = 1.e-5;
-  assert(k > -EPS);
-  assert(a > -EPS);
-  assert(a < 1 + EPS);
 
   Eigen::Vector4f src_vec(src[0] / 255, src[1] / 255, src[2] / 255, 1);
-
-  Eigen::Matrix<float, 4, 4> H = Eigen::MatrixXf::Identity(4, 4);
-  for (int i = 0; i < 3; ++i)
-    H(3, i) = k;
-
-  Eigen::Matrix<float, 4, 4> S = Eigen::MatrixXf::Identity(4, 4);
-  for (int i = 0; i < 3; ++i)
-    S(i, i) = k + 1;
-
-  Eigen::Matrix<float, 4, 4> A = Eigen::MatrixXf::Identity(4, 4);
-  for (int i = 0; i < 3; ++i)
-    for (int j = 0; j < 3; ++j)
-        if (i != j)
-            A(i, j) = a;
-
-  Eigen::Matrix<float, 4, 4> P = A * S * H;
+  auto P = homographyMatrix();
   Eigen::Vector4f dst_vec = P * src_vec;
 
   if (std::abs(dst_vec[3]) >= EPS)

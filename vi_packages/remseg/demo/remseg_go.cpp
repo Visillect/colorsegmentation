@@ -14,6 +14,7 @@
 #include <vi_cvt/ocv/image.hpp>
 
 #include <remseg/segmentator.hpp>
+#include <remseg/weight_func.h>
 
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -27,7 +28,7 @@ using namespace vi::remseg;
 int main(int argc, const char *argv[])
 {
   TCLAP::CmdLine cmd("Run Region Merge Segmentation on a Single image");
-  TCLAP::ValueArg<double> distanceLimit("r", "dist_limit", "distance limit", false, -1, "double", cmd);
+  TCLAP::ValueArg<double> weightLimit("w", "weight_limit", "weight limit", false, -1, "double", cmd);
   TCLAP::ValueArg<int> segmentsLimit("n", "segm_limit", "segments limit", false, 10, "int", cmd);
   TCLAP::ValueArg<std::string> imageMapPath("m", "map", "path to file with image map source in tif-convertible format", false, "", "string", cmd);
   TCLAP::UnlabeledValueArg<std::string> imagePath("image", "path to source RGB-image in tif-convertible format", true, "", "string", cmd);
@@ -46,12 +47,12 @@ int main(int argc, const char *argv[])
     if (!imageMapPath.getValue().empty())
     {
       ImageMap imageMap(imageMapPath.getValue().c_str());
-      segmentator.reset(new Segmentator<Vertex>(*image, &imageMap));
+      segmentator.reset(new Segmentator<Vertex>(*image, &imageMap, student_error, student_weight, {}, LOCK_SEGMENTS, false));
     }
     else
-      segmentator.reset(new Segmentator<Vertex>(*image));
+      segmentator.reset(new Segmentator<Vertex>(*image, student_error, student_weight));
 
-    segmentator->mergeToLimit(distanceLimit.getValue(), -1, segmentsLimit.getValue());
+    segmentator->mergeToLimit(weightLimit.getValue(), -1, segmentsLimit.getValue());
     const ImageMap &imageMap = segmentator->getImageMap();
 
     DECLARE_GUARDED_MINIMG(out);

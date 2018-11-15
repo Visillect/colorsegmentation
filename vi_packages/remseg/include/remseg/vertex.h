@@ -56,14 +56,14 @@ public:
 
 	bool needsSort;
 
-	bool isBlocked;
+	bool isLocked;
 
 	Vertex()
 		: channelsNum(0)
 		, channelsSum(0)
 		, area(0)
 		, needsSort(false)
-		, isBlocked(false)
+		, isLocked(false)
 		, existence_flag(true)
 		, absorbent(0)
 		{ }

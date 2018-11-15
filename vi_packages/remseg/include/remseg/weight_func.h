@@ -38,11 +38,8 @@ either expressed or implied, of copyright holders.
 
 namespace vi { namespace remseg {
 
-inline EdgeValue error_function_replaceme(const Vertex *v) {
-  return 0; // TODO
-}
+EdgeValue student_error(const Vertex *v);
 
-// distance function, deduced from Student t-test
-EdgeValue student_distance(const Vertex *v1, const Vertex *v2);
+EdgeValue student_weight(const Vertex *v1, const Vertex *v2);
 
 }} // ns vi::remseg

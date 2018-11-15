@@ -39,7 +39,7 @@ namespace vi { namespace colorseg {
 
 float ColorVertex::homographyA = 0.0;
 float ColorVertex::homographyK = 3.0;
-float ColorVertex::maxModelDistance = 20;
+float ColorVertex::LTDistance = 20;
 
 ColorVertex::ColorVertex(const ColorVertex* v)
 : Vertex(v)
@@ -81,7 +81,7 @@ void ColorVertex::Initialize(int _channelsNum)
 void ColorVertex::update(const float_t * pix)
 {
   float pix_proj[3] = {0, 0, 0};
-  homography(pix_proj, pix, homographyA, homographyK);
+  homography(pix_proj, pix);
   Vertex::update(pix_proj);
 
 	Eigen::Vector3f pix_vec(pix_proj[0], pix_proj[1], pix_proj[2]);
