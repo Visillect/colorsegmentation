@@ -12,7 +12,12 @@ Here we publish a set of image segmentation libraries developed for the research
 Practically, the code is not platform specific but it is tested only on Linux.
 The official support is curently provided only for Linux too. 
 
+First, install `libjsocpp-dev` package, for example, in Ubuntu run
+
+    sudo apt install libjsoncpp-dev
+
 To configure and compile the project run the following command:
+
 
     git clone https://github.com/Visillect/segmentation
     mkdir build
