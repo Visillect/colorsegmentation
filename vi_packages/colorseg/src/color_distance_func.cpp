@@ -112,7 +112,7 @@ bool isLTCluster(const ColorVertex *v1, const ColorVertex *v2)
     dist_point_to_segment(b2, a1, b1)
   };
 
-  double minDist = *std::min_element(dists, dists + 4);
+  float minDist = *std::min_element(dists, dists + 4);
   return minDist < ColorVertex::getMaxModelDistance();
 }
 

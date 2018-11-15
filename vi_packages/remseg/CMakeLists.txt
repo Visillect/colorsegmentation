@@ -4,11 +4,12 @@ cmake_minimum_required(VERSION 3.0.0)
 
 project(remseg)
 
+find_package(OpenCV REQUIRED)
+
 add_library(remseg
   src/distance_func.cpp
   src/edge_heap.cpp
   src/image_map.cpp
-  src/image.cpp
   src/vertex.cpp
   src/utils.cpp
 )
@@ -25,6 +26,7 @@ target_link_libraries(remseg
     mingeo
     minimgapi
     minimgio
+    mximg
     i8r
     validate_json
     vi_cvt
@@ -32,4 +34,6 @@ target_link_libraries(remseg
 
 #----------------demo---------------------------------------
 add_executable(remseg_go demo/remseg_go.cpp)
-target_link_libraries(remseg_go remseg)
+target_link_libraries(remseg_go
+  remseg
+  ${OpenCV_LIBS})

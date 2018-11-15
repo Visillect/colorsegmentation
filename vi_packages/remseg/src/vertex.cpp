@@ -60,7 +60,7 @@ void Vertex::Initialize(int _channelsNum)
 {
   assert(_channelsNum > 0);
   channelsNum = _channelsNum;
-  channelsSum = new long double[channelsNum];
+  channelsSum = new double[channelsNum];
   for (int i = 0; i < channelsNum; i++)
     channelsSum[i] = 0;
 }
@@ -107,19 +107,11 @@ bool Vertex::isSorted() const
   return true;
 }
 
-void Vertex::update(const double * pix)
+void Vertex::update(const float_t * pix)
 {
   const int n = channelsNum;
   for (int i = 0; i < n; ++i)
     channelsSum[i] += pix[i];
-  area += 1;
-}
-
-void Vertex::update(const uint8_t * pix)
-{
-  const int n = channelsNum;
-  for (int i = 0; i < n; ++i)
-    channelsSum[i] += (long double)pix[i];
   area += 1;
 }
 

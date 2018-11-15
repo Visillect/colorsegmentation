@@ -51,7 +51,7 @@ namespace colorseg {
 class ColorVertex : public Vertex
 {
 public:
-  long double **channelsSumOfSquares;
+  double ** channelsSumOfSquares;
 
   struct HelperStats
   {
@@ -74,29 +74,29 @@ public:
   ~ColorVertex();
 
   void Initialize(int _channelsNum) override;
-  void update(const uint8_t * pix) override;
+  void update(const float * pix) override;
   void absorb(Vertex *to_be_absorbed) override;
 
   const HelperStats & getHelperStats() const;
 
   Json::Value jsonLog() const override;
 
-  static double getHomographyA() { return homographyA; }
-  static double getHomographyK() { return homographyK; }
-  static void setHomographyA(double d) { homographyA = d; }
-  static void setHomographyK(double d) { homographyK = d; }
+  static float getHomographyA() { return homographyA; }
+  static float getHomographyK() { return homographyK; }
+  static void setHomographyA(float f) { homographyA = f; }
+  static void setHomographyK(float f) { homographyK = f; }
 
-  static double getMaxModelDistance() { return maxModelDistance; }
-  static void setMaxModelDistance(double d) { maxModelDistance = d; }
+  static float getMaxModelDistance() { return maxModelDistance; }
+  static void setMaxModelDistance(float f) { maxModelDistance = f; }
 
 private:
   mutable HelperStats helperStats;
 
   mutable bool needToUpdate;
 
-  static double homographyA;
-  static double homographyK;
-  static double maxModelDistance;
+  static float homographyA;
+  static float homographyK;
+  static float maxModelDistance;
 
   void updateHelperStats() const;
 };

@@ -20,6 +20,7 @@ target_include_directories(remseg
 )
 
 target_link_libraries(colorseg
+  mximg
   remseg
 )
 

@@ -43,7 +43,7 @@ namespace vi { namespace remseg {
 struct Edge;
 struct Link;
 
-class Vertex: public std::list<Link>	// поддерживается упорядочивание по Link.vertex
+class Vertex : public std::list<Link>	// поддерживается упорядочивание по Link.vertex
 {
 public:
 	typedef iterator Joint;
@@ -51,7 +51,7 @@ public:
 
 	int channelsNum;
 
-	long double *channelsSum;
+	double *channelsSum;
 	long area;
 
 	bool needsSort;
@@ -73,8 +73,7 @@ public:
 	virtual ~Vertex();
 
 	virtual void Initialize(int _channelsNum);
-	virtual void update(const double * pix);
-	virtual void update(const uint8_t * pix);
+	virtual void update(const float * pix);
 	virtual void absorb(Vertex *to_be_absorbed);
 
 	void clearAbsorbent() { absorbent = 0; }
