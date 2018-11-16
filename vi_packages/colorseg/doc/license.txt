@@ -1,5 +1,7 @@
 Copyright (c) 2012-2018, Visillect Service LLC. All rights reserved.
-
+Developed for Kharkevich Institute for Information Transmission Problems of the
+              Russian Academy of Sciences (IITP RAS).
+              
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
