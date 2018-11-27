@@ -1,3 +1,18 @@
+
+if(NOT jsoncpp_FOUND)
+add_subdirectory(json-cpp)
+if (BUILD_SHARED_LIBS)
+  set(JSONCPP_REAL_LIB_NAME jsoncpp_lib)
+else()
+  set(JSONCPP_REAL_LIB_NAME jsoncpp_lib_static)
+endif()
+else()
+message(STATUS "json-cpp already found, will not build")
+endif()
+add_subdirectory(jsoncpp_compat)
+
+option(WITH_TIFF "Turns on support for TIFF image format." ON)
+
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}/zlib
   ${CMAKE_CURRENT_BINARY_DIR}/libtiff
@@ -27,13 +42,6 @@ set(PNG_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/png)
 set(PNG_LIBRARIES png)
 set(PNG_LIBRARY png)
 set(PNG_FOUND TRUE)
-
-if(NOT jsoncpp_FOUND)
-add_subdirectory(json-cpp)
-else()
-  message(STATUS "json-cpp already found, will not build")
-endif()
-add_subdirectory(jsoncpp_compat)
 
 if (WITH_TESTS)
   add_subdirectory(gtest)

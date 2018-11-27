@@ -1,7 +1,7 @@
 ## Copyright (c) 2017, Visillect Service LLC. All rights reserved.
 ##
 
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.5.1)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "possible build types" FORCE)
 
@@ -37,13 +37,46 @@ include(cmake/options.cmake)
 include(cmake/arch.cmake)
 include(cmake/func_macro.cmake)
 
+# boost setup
+if(WIN32)
+  set(Boost_USE_STATIC_LIBS ON)
+else()
+  set(Boost_USE_STATIC_LIBS OFF)
+endif()
+
+find_package(Boost REQUIRED COMPONENTS system filesystem)
+set(SEGM_BOOST_VERSION "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}")
+if(SEGM_BOOST_VERSION VERSION_LESS "1.54")
+  message(FATAL_ERROR "Bad boost version.")
+endif()
+include_directories(${Boost_INCLUDE_DIRS})
+
+find_package(OpenCV REQUIRED)
+if (OpenCV_VERSION_MAJOR EQUAL "3")
+  add_definitions("-DOPENCV3=1")
+else()
+  message(FATAL_ERROR "Bad OpenCV version.")
+endif()
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+set(MINSUBSYSTEM_ENABLE_MINBASE ON CACHE BOOL "enable minbase")
+set(MINSUBSYSTEM_ENABLE_MINGEO OFF CACHE BOOL "enable mingeo")
+set(MINSUBSYSTEM_ENABLE_MINUTILS ON CACHE BOOL "enable minutils")
+set(MINSUBSYSTEM_ENABLE_MINIMGAPI ON CACHE BOOL "enable minimgapi")
+set(MINSUBSYSTEM_ENABLE_MINIMGPRC ON CACHE BOOL "enable minimgprc")
+set(MINSUBSYSTEM_ENABLE_MINIMGIO ON CACHE BOOL "enable minimgio")
+set(MINSUBSYSTEM_ENABLE_MINSTOPWATCH ON CACHE BOOL "enable minstopwatch")
+
 # global include directories
-include_directories(vi_packages)
-# include_directories(se_packages)
-include_directories(minsubsystem)
+include_directories(thirdparty/zlib/src)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/thirdparty/libtiff)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/thirdparty/libpng)
 include_directories(thirdparty)
-# include_directories(tools)
-# include_directories(sandbox)
+
+include_directories(minsubsystem)
+include_directories(vi_packages)
+
+# Sort of ad-hoc include paths.
 
 # output directories
 set(SEGM_BINARY_PATH ${CMAKE_BINARY_DIR}/segmentation)
@@ -59,9 +92,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${SEGM_BINARY_PATH}/lib.${SEGM
 
 ###################################################################
 
-add_subdirectory(vi_packages)
-# add_subdirectory(se_packages)
-add_subdirectory(minsubsystem)
 add_subdirectory(thirdparty)
-# add_subdirectory(sandbox)
-# add_subdirectory(tools)
+add_subdirectory(minsubsystem)
+add_subdirectory(vi_packages)
+
+option(BUILD_SANDBOX  "Build sandbox projects" OFF)
+if (BUILD_SANDBOX)
+  include_directories(sandbox)
+  add_subdirectory(sandbox)
+endif()
