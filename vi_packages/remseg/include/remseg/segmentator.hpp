@@ -36,7 +36,6 @@ either expressed or implied, of copyright holders.
 #include <fstream>
 #include <iostream>
 
-#include <remseg/image.h>
 #include <remseg/image_map.h>
 #include <remseg/distance_func.h>
 
@@ -83,13 +82,13 @@ public:
   typedef EdgeValue (*ErrorFunction)(const T *v);
   typedef EdgeValue (*DistanceFunction)(const T *v1, const T *v2);
 
-  Segmentator(const Image &image,
+  Segmentator(const MinImg * image,
               EdgeValue (*ef)(const T *v) = error_function_replaceme,
               EdgeValue (*df)(const T *v1, const T *v2) = student_distance,
               bool _normalize = false);
 
-  Segmentator(const Image &image,
-              const ImageMap &_imageMap,
+  Segmentator(const MinImg * image,
+              const ImageMap * _imageMap,
               EdgeValue (*ef)(const T *v) = error_function_replaceme,
               EdgeValue (*df)(const T *v1, const T *v2) = student_distance,
               std::set<std::pair<int, int> > const & _blockList = {},
@@ -141,9 +140,6 @@ public:
 
   const Edge *top() const { return edgeHeap->top(); }
 
-  bool dumpSegment(T *v, Points &points);
-  bool dumpAllSegments(const char *fileName, const Image &image);
-
   const ImageMap &getImageMap() const { return *imageMap; }
   SegmentID getId(Vertex *v) const { return reinterpret_cast<T*>(v) - reinterpret_cast<T*>(vertices); }
 
@@ -186,13 +182,15 @@ protected:
   EdgeValue errorAccumulator = 0;
   bool normalize;
 
+  std::map<SegmentID, SegmentID> id_to_idx;
+
   void initialize(int maxNumberOfVertices, int maxNumberOfEdges);
   bool goodVertex(const T *v) const
   { return v != 0 and !isEmpty() and v >= vertices and v < vertices + sizeOfVertices and v->exists(); }
 
-  void createAdjacencyGraph(const Image &image);
-  void createAdjacencyGraph(const Image &image,
-                            const ImageMap &imageMap);
+  void createAdjacencyGraph(const MinImg *image);
+  void createAdjacencyGraph(const MinImg * image,
+                            const ImageMap  * _imageMap);
 
 };
 
@@ -211,26 +209,6 @@ void Segmentator<T>::enumerateSegments(std::map<T *, int> &emap)
   for (int i = 0; i < sizeOfVertices; i++)
     if (vertices[i].exists())
       emap.insert(std::make_pair<T *, int>(&vertices[i], n++));
-}
-
-template<typename T>
-bool Segmentator<T>::dumpAllSegments(const char *fileName, const Image &image)
-{
-  std::ofstream f(fileName);
-  if (!f)
-    return false;
-  updateMapping();
-  for (int i = 0; i < image.getWidth(); i++)
-    for (int j = 0; j < image.getHeight(); j++)
-    {
-      const uint8_t *pixel = image.getPixel(i, j);
-      for (int k = 0; k < image.getChannelsNum(); k++, pixel++)
-        f << *pixel << ' ';
-      f << imageMap->getSegment(i,j) << std::endl;
-      if (!f)
-        return false;
-    }
-  return true;
 }
 
 template<typename T>
@@ -287,43 +265,26 @@ bool Segmentator<T>::areConnected(const T *v1, const T *v2) const
 }
 
 template<typename T>
-bool Segmentator<T>::dumpSegment(T *v, Points &points)
-{
-  assert(v and !isEmpty());
-
-  // LOG_INFO("Dumping segment " << v - vertices);
-  // LOG_INFO("R = " << v->channelsSum[0] / v->area << "  G = " << v->channelsSum[1] / v->area << "  B = " << v->channelsSum[2] / v->area << "  Area = " << v->area);
-
-  if (!goodVertex(v))
-    throw std::runtime_error("goodVertex() failed");
-
-  SegmentID vID = getId(v);
-
-  for (int j = 0; j < imageMap->getHeight(); j++)
-    for (int i = 0; i < imageMap->getWidth(); i++)
-      if (imageMap->getSegment(i,j) == vID)
-        points.push_back(Point(i,j));
-  return true;
-}
-
-template<typename T>
-Segmentator<T>::Segmentator(const Image &image,
+Segmentator<T>::Segmentator(const MinImg * image,
                             EdgeValue (*ef)(const T *v),
                             EdgeValue (*df)(const T *v1, const T *v2),
                             bool _normalize)
   : error_function(ef)
   , distance_function(df)
-  , channelsNum(image.getChannelsNum())
+  , channelsNum(image->channels)
   , normalize(_normalize)
 {
-  imageMap = new ImageMap(image.getWidth(), image.getHeight());
+  if (image->channelDepth != 1)
+    throw std::runtime_error("Unsupported image type. Only uint8_t is supported");
+
+  imageMap = new ImageMap(image->width, image->height);
 
   createAdjacencyGraph(image);
 }
 
 template<typename T>
-Segmentator<T>::Segmentator(const Image &image,
-                            const ImageMap& _imageMap,
+Segmentator<T>::Segmentator(const MinImg * image,
+                            const ImageMap * _imageMap,
                             EdgeValue (*ef)(const T *v),
                             EdgeValue (*df)(const T *v1, const T *v2),
                             std::set<std::pair<int, int> > const & _blockList,
@@ -331,26 +292,29 @@ Segmentator<T>::Segmentator(const Image &image,
                             bool _normalize)
   : error_function(ef)
   , distance_function(df)
-  , channelsNum(image.getChannelsNum())
+  , channelsNum(image->channels)
   , blockList(_blockList)
   , blocking_policy(_blocking_policy)
   , normalize(_normalize)
 {
-  imageMap = new ImageMap(image.getWidth(), image.getHeight());
+  if (image->channelDepth != 1)
+    throw std::runtime_error("Unsupported image type. Only uint8_t is supported");
 
-  if (_imageMap.getWidth() != image.getWidth() || _imageMap.getHeight() != image.getHeight())
+  imageMap = new ImageMap(image->width, image->height);
+
+  if (_imageMap->getWidth() != image->width || _imageMap->getHeight() != image->height)
     throw std::runtime_error("ImageMap size is inconsistent with image");
 
   createAdjacencyGraph(image, _imageMap);
 }
 
 template<typename T>
-void Segmentator<T>::createAdjacencyGraph(const Image &image)
+void Segmentator<T>::createAdjacencyGraph(const MinImg * image)
 {
   // LOG_INFO("Creating adjacency graph...");
 
-  const int width = image.getWidth();
-  const int height = image.getHeight();
+  const int width = image->width;
+  const int height = image->height;
 
   initialize(width*height, 2*width*height - width - height);
 
@@ -360,7 +324,7 @@ void Segmentator<T>::createAdjacencyGraph(const Image &image)
   for (j = 0, v = vertices; j < height; j++)
     for (i = 0; i < width; i++, v++)
     {
-      const uint8_t *pix = image.getPixel(i, j);
+      const uint8_t *pix = GetMinImageLineAs<uint8_t>(image, j) + i * image->channels;
       SegmentID id = getId(v);
       (*imageMap)(i,j) = id;
       v->update(pix);
@@ -379,11 +343,10 @@ void Segmentator<T>::createAdjacencyGraph(const Image &image)
 }
 
 template<typename T>
-void Segmentator<T>::createAdjacencyGraph(const Image &image,
-                                          const ImageMap & _imageMap)
+void Segmentator<T>::createAdjacencyGraph(const MinImg * image,
+                                          const ImageMap * _imageMap)
 {
-  auto const stats = _imageMap.getSegmentStats();
-  std::map<SegmentID, SegmentID> id_to_idx;
+  auto const stats = _imageMap->getSegmentStats();
   SegmentID idx = 0;
   for (auto const & stat : stats)
   {
@@ -406,9 +369,10 @@ void Segmentator<T>::createAdjacencyGraph(const Image &image,
     {
       for (int j = rect.x; j < rect.x + rect.width; ++j)
       {
-        if (_imageMap.getSegment(j, i) != stat.first)
+        if (_imageMap->getSegment(j, i) != stat.first)
           continue;
-        v->update(image.getPixel(j, i));
+        const uint8_t *pix = GetMinImageLineAs<uint8_t>(image, i) + j * image->channels;
+        v->update(pix);
         (*imageMap)(j,i) = idx;
       }
     }
@@ -583,11 +547,11 @@ int Segmentator<T>::mergeToLimit(EdgeValue distanceLimit, EdgeValue errorLimit, 
     updateMapping(true);
     for (auto const & stat : imageMap->getSegmentStats())
     {
-      int id = stat.first;
-      T *v = &vertices[id];
+      int idx = id_to_idx[stat.first];
+      T *v = &vertices[idx];
       for (auto const & n : stat.second.neighbours)
-        if (vertices[n].isBlocked != v->isBlocked)
-          connect(v, &vertices[n]);
+        if (vertices[id_to_idx[n]].isBlocked != v->isBlocked)
+          connect(v, &vertices[id_to_idx[n]]);
     }
 
     result = mergeToLimitCycle(distanceLimit, errorLimit, segmentsLimit, dbg, debug_iter, maxSegments);

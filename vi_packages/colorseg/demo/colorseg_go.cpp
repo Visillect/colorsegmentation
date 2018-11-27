@@ -6,6 +6,8 @@
 #include <minimgapi/minimgapi-helpers.hpp>
 #include <minimgapi/imgguard.hpp>
 #include <minimgio/minimgio.h>
+#include <mximg/image.h>
+#include <mximg/ocv.h>
 #include <vi_cvt/std/exception_macros.hpp>
 #include <vi_cvt/ocv/image.hpp>
 
@@ -171,18 +173,18 @@ int main(int argc, const char *argv[])
 
   try
   {
-    std::unique_ptr<Image> image(new Image(imagePath.getValue().c_str(), false));
-    if (image->getChannelsNum() != 3)
-      throw std::runtime_error("Image should have exact 3 channels");
+    mximg::PImage image = mximg::Image::imread(imagePath.getValue().c_str());
+    if ((*image)->channels != 3)
+      throw std::runtime_error("Image should have exact 3 channels for color segmentation");
 
     cv::Mat cv_image_filtered;
     if (prefilter.getValue())
     {
-      cv::Mat cv_image = vi::cvt::ocv::as_cvmat(image->getMinImg());
+      cv::Mat cv_image = vi::cvt::ocv::as_cvmat(*image);
       cv::bilateralFilter(cv_image, cv_image_filtered, BILATERAL_D, BILATERAL_SIGMA_COLOR, BILATERAL_SIGMA_SPACE);
       cv::imwrite(filtered_filename, cv_image_filtered);
-      MinImg min_image_filtered = vi::cvt::ocv::as_minimg(cv_image_filtered);
-      image.reset(new Image(&min_image_filtered, false));
+      //MinImg min_image_filtered = vi::cvt::ocv::as_minimg(cv_image_filtered);
+      image = mximg::createByCopy(cv_image_filtered);
     }
 
     auto dbg = i8r::logger("debug." + basename + ".pointlike");
@@ -193,13 +195,13 @@ int main(int argc, const char *argv[])
     std::set<std::pair<int, int> > blockList;
     obtainBlockList(blockList, segmentatorPointlike, blockingThresh.getValue());
 
-    Segmentator<ColorVertex> segmentatorLinear(*image, segmentatorPointlike.getImageMap(),
+    Segmentator<ColorVertex> segmentatorLinear(*image, &segmentatorPointlike.getImageMap(),
                                                error_r1, criteria_r1,
                                                blockList, BLOCK_SEGMENTS, true);
     segmentatorLinear.mergeToLimit(-1, errorLimit.getValue() * std::sqrt(2./3), segmentsLimit.getValue(),
                                    dbg, debugIter.getValue(), maxSegments.getValue());
 
-    Segmentator<ColorVertex> segmentatorPlanar(*image, segmentatorLinear.getImageMap(),
+    Segmentator<ColorVertex> segmentatorPlanar(*image, &segmentatorLinear.getImageMap(),
                                                 error_r2, criteria_r2,
                                                 {}, BLOCK_SEGMENTS, true);
     segmentatorPlanar.mergeToLimit(-1, errorLimit.getValue() * std::sqrt(1./3), segmentsLimit.getValue(),

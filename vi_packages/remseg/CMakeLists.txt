@@ -8,7 +8,6 @@ add_library(remseg
   src/distance_func.cpp
   src/edge_heap.cpp
   src/image_map.cpp
-  src/image.cpp
   src/vertex.cpp
   src/utils.cpp
 )
@@ -25,6 +24,7 @@ target_link_libraries(remseg
     mingeo
     minimgapi
     minimgio
+    mximg
     i8r
     validate_json
     vi_cvt

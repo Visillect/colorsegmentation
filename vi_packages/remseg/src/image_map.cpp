@@ -32,7 +32,9 @@ either expressed or implied, of copyright holders.
 
 
 #include <remseg/image_map.h>
-#include <remseg/image.h>
+
+#include <minimgapi/minimgapi-helpers.hpp>
+#include <mximg/image.h>
 #include <vi_cvt/std/color.hpp>
 
 #include <cstring>
@@ -64,7 +66,7 @@ ImageMap::ImageMap(const ImageMap &imageMap)
   colorMap = imageMap.colorMap;
 }
 
-void DFS(Image const & image, SegmentID * pixels,
+void DFS(MinImg const * image, SegmentID * pixels,
          uint32_t color, int i, int j, SegmentID id)
 {
   std::stack<std::pair<int, int> > buffer;
@@ -75,18 +77,18 @@ void DFS(Image const & image, SegmentID * pixels,
     auto pos2d = buffer.top();
     buffer.pop();
 
-    int pos1d = pos2d.first * image.getWidth() + pos2d.second;
+    int pos1d = pos2d.first * image->width + pos2d.second;
     if (pixels[pos1d] != -1)
       continue;
 
     pixels[pos1d] = id;
-    for (int k = std::max(pos2d.first - 1, 0); k <= std::min(pos2d.first + 1, image.getHeight() -1); ++k)
+    for (int k = std::max(pos2d.first - 1, 0); k <= std::min(pos2d.first + 1, image->height -1); ++k)
     {
-      for (int l = std::max(pos2d.second - 1, 0); l <= std::min(pos2d.second + 1, image.getWidth() - 1); ++l)
+      for (int l = std::max(pos2d.second - 1, 0); l <= std::min(pos2d.second + 1, image->width - 1); ++l)
       {
         RGB curr_color;
         for (int m = 0; m < 3; ++m)
-          curr_color[m] = image.getPixel(l, k)[m];
+          curr_color[m] = GetMinImageLineAs<uint8_t>(image, k)[l * image->channels + m];
         if (vi::cvt::as_intcolor(curr_color, 3) == color)
           buffer.push({k, l});
       }
@@ -106,25 +108,33 @@ ImageMap::ImageMap(const char *fileName)
   , width(0)
   , height(0)
 {
-  Image image(fileName, true);
-  Init(image.getWidth(), image.getHeight());
-  for (int i = 0; i < image.getWidth() * image.getHeight(); ++i)
+  mximg::PImage image = mximg::Image::imread(fileName);
+
+ if ((*image)->channelDepth != 1)
+    throw std::runtime_error("Unsupported image map type. Only uint8_t is supported");
+
+ if ((*image)->channels != 3)
+    throw std::runtime_error("Unsupported image map channels num,ber. Only 3 channels are supported");
+
+
+  Init((*image)->width, (*image)->height);
+  for (int i = 0; i < (*image)->width * (*image)->height; ++i)
     pixels[i] = -1;
 
   SegmentID max_id = 0;
 
-  for (int i = 0; i < image.getHeight(); ++i)
+  for (int i = 0; i < (*image)->height; ++i)
   {
-    for (int j = 0; j < image.getWidth(); ++j)
+    for (int j = 0; j < (*image)->width; ++j)
     {
       if (pixels[i * width + j] > -1)
         continue;
 
       RGB color;
       for (int k = 0; k < 3; ++k)
-        color[k] = image.getPixel(j, i)[k];
+        color[k] = GetMinImageLineAs<uint8_t>(*image, i)[j * (*image)->channels + k];
       uint32_t int_color = vi::cvt::as_intcolor(color, 3);
-      DFS(image, pixels, int_color, i, j, max_id);
+      DFS(*image, pixels, int_color, i, j, max_id);
 
       colorMap[max_id][0] = color[0];
       colorMap[max_id][1] = color[1];
