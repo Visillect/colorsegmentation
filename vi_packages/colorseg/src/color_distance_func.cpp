@@ -30,10 +30,10 @@ either expressed or implied, of copyright holders.
 */
 
 
-#include <colorseg/color_weight_func.h>
+#include <colorseg/color_distance_func.h>
 
-#include <remseg/weight_func.h>
 #include <colorseg/colorspace_homography.hpp>
+#include <remseg/distance_func.h>
 
 #include <cassert>
 #include <cmath>
@@ -65,27 +65,27 @@ double dist_point_to_segment(const Eigen::Vector3d& p,
   return dist_point_to_line(p, (b - a).normalized(), a);
 }
 
-EdgeValue pointlike_SD(const ColorVertex *v1, const ColorVertex *v2)
+EdgeValue criteria_r0(const ColorVertex *v1, const ColorVertex *v2)
 {
-  return std::sqrt(student_weight(v1, v2));
+  return std::sqrt(student_distance(v1, v2));
 }
 
-EdgeValue linear_error(const ColorVertex *v) {
+EdgeValue error_r1(const ColorVertex *v) {
   ColorVertex::HelperStats const & hs = v->getHelperStats();
   double err = hs.eigenvalues()[0] + hs.eigenvalues()[1];
   return err * v->area;
 }
 
-EdgeValue linear_SD(const ColorVertex *v1, const ColorVertex *v2)
+EdgeValue criteria_r1(const ColorVertex *v1, const ColorVertex *v2)
 {
   ColorVertex v(v1);
   ColorVertex tmp(v2);
   v.absorb(&tmp);
 
-  return std::sqrt(linear_error(&v) - linear_error(v1) - linear_error(v2)) ;
+  return std::sqrt(error_r1(&v) - error_r1(v1) - error_r1(v2)) ;
 }
 
-EdgeValue planar_error(const ColorVertex *v) {
+EdgeValue error_r2(const ColorVertex *v) {
   ColorVertex::HelperStats const & hs = v->getHelperStats();
   double err = hs.eigenvalues()[0];
   return err * v->area;
@@ -112,11 +112,11 @@ bool isLTCluster(const ColorVertex *v1, const ColorVertex *v2)
     dist_point_to_segment(b2, a1, b1)
   };
 
-  float minDist = *std::min_element(dists, dists + 4);
-  return minDist < ColorVertex::getLTDistance();
+  double minDist = *std::min_element(dists, dists + 4);
+  return minDist < ColorVertex::getMaxModelDistance();
 }
 
-EdgeValue planar_SD(const ColorVertex *v1, const ColorVertex *v2)
+EdgeValue criteria_r2(const ColorVertex *v1, const ColorVertex *v2)
 {
   if (!isLTCluster(v1, v2))
     return std::numeric_limits<double>::infinity();
@@ -124,7 +124,7 @@ EdgeValue planar_SD(const ColorVertex *v1, const ColorVertex *v2)
   ColorVertex v(v1);
   ColorVertex tmp(v2);
   v.absorb(&tmp);
-  return std::sqrt(planar_error(&v) - planar_error(v1) - planar_error(v2));
+  return std::sqrt(error_r2(&v) - error_r2(v1) - error_r2(v2));
 }
 
 }}	// ns vi::colorseg

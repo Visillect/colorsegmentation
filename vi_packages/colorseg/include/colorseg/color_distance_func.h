@@ -39,14 +39,19 @@ namespace vi { namespace colorseg {
 
 const double ME = 0.5;
 
-inline EdgeValue pointlike_error(const ColorVertex*) { return 0; }
-EdgeValue pointlike_SD(const ColorVertex *v1, const ColorVertex *v2);
+inline EdgeValue shouldnotcall(const ColorVertex*) {
+  return 0;//throw std::runtime_error("Should not call this dummy error function for some criteria");
+}
 
-EdgeValue linear_error(const ColorVertex *v);
-EdgeValue linear_SD(const ColorVertex *v1, const ColorVertex *v2);
+EdgeValue criteria_r0(const ColorVertex *v1, const ColorVertex *v2);
 
-EdgeValue planar_error(const ColorVertex *v);
-EdgeValue planar_SD(const ColorVertex *v1, const ColorVertex *v2);
+EdgeValue criteria_r1(const ColorVertex *v1, const ColorVertex *v2);
+
+EdgeValue error_r1(const ColorVertex *v);
+
+EdgeValue criteria_r2(const ColorVertex *v1, const ColorVertex *v2);
+
+EdgeValue error_r2(const ColorVertex *v);
 
 bool isLTCluster(const ColorVertex *v1, const ColorVertex *v2);
 

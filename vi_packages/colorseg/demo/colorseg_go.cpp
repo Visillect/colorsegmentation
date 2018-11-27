@@ -6,14 +6,12 @@
 #include <minimgapi/minimgapi-helpers.hpp>
 #include <minimgapi/imgguard.hpp>
 #include <minimgio/minimgio.h>
-#include <mximg/image.h>
-#include <mximg/ocv.h>
 #include <vi_cvt/std/exception_macros.hpp>
 #include <vi_cvt/ocv/image.hpp>
 
+#include <colorseg/color_distance_func.h>
 #include <colorseg/colorspace_homography.hpp>
 #include <colorseg/color_vertex.h>
-#include <colorseg/color_weight_func.h>
 #include <remseg/segmentator.hpp>
 #include <remseg/utils.h>
 
@@ -30,6 +28,10 @@ namespace bfs = boost::filesystem;
 using namespace vi::remseg;
 using namespace vi::colorseg;
 
+const int    BILATERAL_D = 15;
+const double BILATERAL_SIGMA_COLOR = 50;
+const double BILATERAL_SIGMA_SPACE = 50;
+
 double KL(Eigen::Vector3d const & mean1, Eigen::Vector3d const & mean2,
           Eigen::Matrix3d const & cov1, Eigen::Matrix3d const & cov2)
 {
@@ -39,7 +41,7 @@ double KL(Eigen::Vector3d const & mean1, Eigen::Vector3d const & mean2,
   return (s1 + s2 + s3 - 3)/ 2;
 }
 
-void obtainLockList(std::set<std::pair<int, int> > & lockList,
+void obtainBlockList(std::set<std::pair<int, int> > & blockList,
                       Segmentator<ColorVertex> const & segmentator,
                       double threshold)
 {
@@ -59,7 +61,7 @@ void obtainLockList(std::set<std::pair<int, int> > & lockList,
     }
 
     if (!dists.empty() && *std::min_element(dists.begin(), dists.end()) > threshold)
-      lockList.insert(stat.second.leftTopPoint);
+      blockList.insert(stat.second.leftTopPoint);
   }
 }
 
@@ -77,7 +79,8 @@ void offscaleFix(Segmentator<ColorVertex> & segmentator, double threshold)
     ColorVertex * v = segmentator.vertexById(stat.first);
     ColorVertex::HelperStats const & hs = v->getHelperStats();
 
-    if (homographyInv(hs.mean).mean() < threshold)
+    if (homographyInv(hs.mean, ColorVertex::getHomographyA(),
+                      ColorVertex::getHomographyK()).mean() < threshold)
       continue;
 
     if (v->size() == 1)
@@ -140,23 +143,21 @@ int main(int argc, const char *argv[])
   i8r::AutoShutdown i8r_shutdown;
 
   TCLAP::CmdLine cmd("Run Range-Based Region Merge Segmentation on a Single image");
-  TCLAP::ValueArg<int> bilateralD("", "bl_d", "bilateral pixel diameter", false, 15, "int", cmd);
-  TCLAP::ValueArg<double> bilateralSigmaColor("", "bl_sigma_color", "bilateral sigma color", false, 50, "double", cmd);
-  TCLAP::ValueArg<double> bilateralSigmaSpace("", "bl_sigma_space", "bilateral sigma space", false, 50, "double", cmd);
   TCLAP::ValueArg<double> errorLimit("e", "error_limit", "average error limit", false, -1, "double", cmd);
   TCLAP::ValueArg<int> segmentsLimit("n", "segm_limit", "segments limit", false, -1, "int", cmd);
-  TCLAP::ValueArg<double> lockThreshold("g", "lock_thresh", "segments locking threshold value", false, 1, "double", cmd);
-  TCLAP::ValueArg<double> LTDistance("", "model_distance", "distance betwwen L- or T-shaped clusters", false, 20, "double", cmd);
-  TCLAP::ValueArg<double> offscaleThreshold("", "offscale_thresh", "offscale threshold", false, 230, "double", cmd);
   TCLAP::UnlabeledValueArg<std::string> imagePath("image", "path to source RGB-image in tif-convertible format", true, "", "string", cmd);
   TCLAP::ValueArg<std::string> output("o", "output", "path to output dir", false, ".", "string", cmd);
   TCLAP::SwitchArg debug("d", "debug", "debug mode", cmd, false);
   TCLAP::ValueArg<int> debugIter("i", "debug_iter", "debug iterations", false, 1, "int", cmd);
   TCLAP::ValueArg<int> maxSegments("s", "max_segments", "max segments for debug output", false, -1, "int", cmd);
+  TCLAP::ValueArg<double> blockingThresh("g", "blocking_thresh", "blocking threshold value", false, 1, "double", cmd);
+  TCLAP::ValueArg<double> maxModelDistance("", "model_distance", "model distance", false, 20, "double", cmd);
+  TCLAP::ValueArg<double> glareThresh("", "glare_thresh", "glare threshold", false, 230, "double", cmd);
+  TCLAP::SwitchArg prefilter("p", "prefilter", "use image pre-filtering", cmd, false);
 
   cmd.parse(argc, argv);
 
-  ColorVertex::setLTDistance(LTDistance.getValue());
+  ColorVertex::setMaxModelDistance(maxModelDistance.getValue());
 
   if (!bfs::is_directory(output.getValue()))
     throw std::runtime_error("Failed to find output directory " + output.getValue());
@@ -170,39 +171,41 @@ int main(int argc, const char *argv[])
 
   try
   {
-    cv::Mat cv_image = cv::imread(imagePath.getValue().c_str());
-    if (cv_image.channels() != 3)
-      throw std::runtime_error("Image should have exact 3 channels for color segmentation");
+    std::unique_ptr<Image> image(new Image(imagePath.getValue().c_str(), false));
+    if (image->getChannelsNum() != 3)
+      throw std::runtime_error("Image should have exact 3 channels");
 
     cv::Mat cv_image_filtered;
-    cv::bilateralFilter(cv_image, cv_image, bilateralD.getValue(),
-                        bilateralSigmaColor.getValue(), bilateralSigmaSpace.getValue());
-    cv::imwrite(filtered_filename, cv_image_filtered);
-
-    cv_image_filtered.convertTo(cv_image_filtered, CV_32F);
-    mximg::PImage image = mximg::createByCopy(cv_image_filtered);
+    if (prefilter.getValue())
+    {
+      cv::Mat cv_image = vi::cvt::ocv::as_cvmat(image->getMinImg());
+      cv::bilateralFilter(cv_image, cv_image_filtered, BILATERAL_D, BILATERAL_SIGMA_COLOR, BILATERAL_SIGMA_SPACE);
+      cv::imwrite(filtered_filename, cv_image_filtered);
+      MinImg min_image_filtered = vi::cvt::ocv::as_minimg(cv_image_filtered);
+      image.reset(new Image(&min_image_filtered, false));
+    }
 
     auto dbg = i8r::logger("debug." + basename + ".pointlike");
-    Segmentator<ColorVertex> segmentatorPointlike(*image, pointlike_error, pointlike_SD, true);
+    Segmentator<ColorVertex> segmentatorPointlike(*image, shouldnotcall, criteria_r0, true);
     segmentatorPointlike.mergeToLimit(-1, errorLimit.getValue(), segmentsLimit.getValue(),
                                       dbg, debugIter.getValue(), maxSegments.getValue());
 
-    std::set<std::pair<int, int> > lockList;
-    obtainLockList(lockList, segmentatorPointlike, lockThreshold.getValue());
+    std::set<std::pair<int, int> > blockList;
+    obtainBlockList(blockList, segmentatorPointlike, blockingThresh.getValue());
 
-    Segmentator<ColorVertex> segmentatorLinear(*image, &segmentatorPointlike.getImageMap(),
-                                               linear_error, linear_SD,
-                                               lockList, LOCK_SEGMENTS, true);
+    Segmentator<ColorVertex> segmentatorLinear(*image, segmentatorPointlike.getImageMap(),
+                                               error_r1, criteria_r1,
+                                               blockList, BLOCK_SEGMENTS, true);
     segmentatorLinear.mergeToLimit(-1, errorLimit.getValue() * std::sqrt(2./3), segmentsLimit.getValue(),
                                    dbg, debugIter.getValue(), maxSegments.getValue());
 
-    Segmentator<ColorVertex> segmentatorPlanar(*image, &segmentatorLinear.getImageMap(),
-                                                planar_error, planar_SD,
-                                                {}, LOCK_SEGMENTS, true);
+    Segmentator<ColorVertex> segmentatorPlanar(*image, segmentatorLinear.getImageMap(),
+                                                error_r2, criteria_r2,
+                                                {}, BLOCK_SEGMENTS, true);
     segmentatorPlanar.mergeToLimit(-1, errorLimit.getValue() * std::sqrt(1./3), segmentsLimit.getValue(),
                                    dbg, debugIter.getValue(), maxSegments.getValue());
 
-    offscaleFix(segmentatorPlanar, offscaleThreshold.getValue());
+    offscaleFix(segmentatorPlanar, glareThresh.getValue());
     const ImageMap &imageMap = segmentatorPlanar.getImageMap();
 
     DECLARE_GUARDED_MINIMG(imgres);

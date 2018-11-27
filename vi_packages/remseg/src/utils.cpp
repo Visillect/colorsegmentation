@@ -71,31 +71,31 @@ void visualize(MinImg * imgres, ImageMap const & imageMap,
   }
 }
 
-void readLockList(std::set<std::pair<int, int> > & lockList,
-                   bool & lockingPolicy,
+void readBlockList(std::set<std::pair<int, int> > & blockList,
+                   bool & blockingPolicy,
                    std::string const & filename)
 {
   Json::Value root = vi::json_from_file(filename);
-  lockList.clear();
+  blockList.clear();
   for (auto& point : root["vertices"])
-    lockList.insert({point["x"].asInt(), point["y"].asInt()});
-  lockingPolicy = root["blocking_policy"].asBool();
+    blockList.insert({point["x"].asInt(), point["y"].asInt()});
+  blockingPolicy = root["blocking_policy"].asBool();
 }
 
-void saveLockList(std::string const & filename,
-                   std::set<std::pair<int, int> > const & lockList,
-                   bool lockingPolicy)
+void saveBlockList(std::string const & filename,
+                   std::set<std::pair<int, int> > const & blockList,
+                   bool blockingPolicy)
 {
   Json::Value root;
   root["vertices"] = Json::arrayValue;
-  for (auto const& point : lockList)
+  for (auto const& point : blockList)
   {
     Json::Value v;
     v["x"] = point.first;
     v["y"] = point.second;
     root["vertices"].append(v);
   }
-  root["blocking_policy"] = lockingPolicy;
+  root["blocking_policy"] = blockingPolicy;
   vi::json_to_file(filename, root);
 }
 

@@ -33,6 +33,8 @@ either expressed or implied, of copyright holders.
 
 #pragma once
 
+#include <remseg/image.h>
+
 #include <mingeo/mingeo.h>
 
 #include <map>
@@ -45,15 +47,6 @@ namespace vi { namespace remseg {
 
 typedef uint8_t RGB[3];
 typedef int SegmentID;
-
-struct Point
-{
-  int x, y;
-  Point(int _x = 0, int _y = 0)
-    : x(_x)
-    , y(_y)
-  { }
-};
 
 struct SegmentStat
 {

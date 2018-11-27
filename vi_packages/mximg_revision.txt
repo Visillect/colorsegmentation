@@ -1,2 +1,0 @@
-11610
-https://vis.iitp.ru/svn/vi/packages/mximg/trunk@11610

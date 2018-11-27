@@ -36,9 +36,9 @@ either expressed or implied, of copyright holders.
 #include <fstream>
 #include <iostream>
 
-#include <remseg/edge_heap.h>
+#include <remseg/image.h>
 #include <remseg/image_map.h>
-#include <remseg/vertex.h>
+#include <remseg/distance_func.h>
 
 #include <i8r/i8r.h>
 
@@ -59,7 +59,7 @@ either expressed or implied, of copyright holders.
 
 #include <cassert>
 
-std::string weight_to_string(const double a_value)
+std::string dist_to_string(const double a_value)
 {
   char buff[100];
   snprintf(buff, sizeof(buff), "%09.4f", a_value);
@@ -70,7 +70,7 @@ std::string weight_to_string(const double a_value)
 
 namespace vi { namespace remseg {
 
-enum {LOCK_SEGMENTS, LOCK_EDGES};
+enum {BLOCK_SEGMENTS, BLOCK_EDGES};
 enum {MERGE_OK, MERGE_BREAK};
 
 template<typename T>
@@ -81,19 +81,19 @@ class Segmentator
 public:
 
   typedef EdgeValue (*ErrorFunction)(const T *v);
-  typedef EdgeValue (*WeightFunction)(const T *v1, const T *v2);
+  typedef EdgeValue (*DistanceFunction)(const T *v1, const T *v2);
 
-  Segmentator(const MinImg * image,
-              ErrorFunction ef,
-              WeightFunction df,
+  Segmentator(const Image &image,
+              EdgeValue (*ef)(const T *v) = error_function_replaceme,
+              EdgeValue (*df)(const T *v1, const T *v2) = student_distance,
               bool _normalize = false);
 
-  Segmentator(const MinImg * image,
-              const ImageMap * _imageMap,
-              ErrorFunction ef,
-              WeightFunction df,
-              std::set<std::pair<int, int> > const & _lockList = {},
-              bool _locking_policy = LOCK_SEGMENTS,
+  Segmentator(const Image &image,
+              const ImageMap &_imageMap,
+              EdgeValue (*ef)(const T *v) = error_function_replaceme,
+              EdgeValue (*df)(const T *v1, const T *v2) = student_distance,
+              std::set<std::pair<int, int> > const & _blockList = {},
+              bool _blocking_policy = BLOCK_SEGMENTS,
               bool _normalize = false);
 
   ~Segmentator();
@@ -101,7 +101,7 @@ public:
   EdgeValue calcError(const T* v) const;
 
   int numberOfSegments() const { return vertexNum; }
-  int numberOfEdges() const { return edgeHeap ? edgeHeap->getSize() : 0; }
+  int numberOfEdges() const { return edgeHeap? edgeHeap->getSize() : 0; }
 
   T *pointToVertex(const Point &pt)
   {
@@ -122,14 +122,14 @@ public:
   void mergeNext(bool do_update_mapping = true);
 
   // Два mergeToLimitCycle, между которыми происходит соединение заблокированных регионов с незаблокированными
-  int mergeToLimit(EdgeValue weightLimit, EdgeValue errorLimit, int segmentsLimit,
+  int mergeToLimit(EdgeValue distanceLimit, EdgeValue errorLimit, int segmentsLimit,
                    i8r::PLogger dbg = nullptr, int debug_iter = 1, int maxSegments=-1);
 
-  // выполняет mergeNext(), пока вес ребра меньше weightLimit, а общее число сегментов больше segmentsLimit. В случае прерывания
+  // выполняет mergeNext(), пока вес ребра меньше distanceLimit, а общее число сегментов больше segmentsLimit. В случае прерывания
   // по breakpoint вернет MERGE_BREAK, иначе MERGE_OK.
   // После завершения вызывается updateMapping()
   // Если в качестве какого-то параметра установить отрицательное значение, то он учитываться не будет.
-  int mergeToLimitCycle(EdgeValue weightLimit, EdgeValue errorLimit, int segmentsLimit,
+  int mergeToLimitCycle(EdgeValue distanceLimit, EdgeValue errorLimit, int segmentsLimit,
                         i8r::PLogger dbg = nullptr, int debug_iter = 1, int maxSegments=-1);
 
   T *mergeBackground(int areaLimit);
@@ -140,6 +140,9 @@ public:
   void enumerateSegments(std::map<T *, int> &enumerationMap);
 
   const Edge *top() const { return edgeHeap->top(); }
+
+  bool dumpSegment(T *v, Points &points);
+  bool dumpAllSegments(const char *fileName, const Image &image);
 
   const ImageMap &getImageMap() const { return *imageMap; }
   SegmentID getId(Vertex *v) const { return reinterpret_cast<T*>(v) - reinterpret_cast<T*>(vertices); }
@@ -154,11 +157,11 @@ public:
 
   void saveLog(std::string const & filename);
 
-  WeightFunction getWeightFunction() const { return weight_function; }
+  DistanceFunction getDistanceFunction() const { return distance_function; }
 
 protected:
   ErrorFunction error_function;
-  WeightFunction weight_function;
+  DistanceFunction distance_function;
 
   ImageMap *imageMap = nullptr;
   EdgeHeap *edgeHeap = nullptr;
@@ -177,8 +180,8 @@ protected:
   int *mergeAuxArray = nullptr;
   int stepNumber = 0;
 
-  std::set<std::pair<int, int> > lockList;
-  bool locking_policy;
+  std::set<std::pair<int, int> > blockList;
+  bool blocking_policy;
 
   EdgeValue errorAccumulator = 0;
   bool normalize;
@@ -187,9 +190,9 @@ protected:
   bool goodVertex(const T *v) const
   { return v != 0 and !isEmpty() and v >= vertices and v < vertices + sizeOfVertices and v->exists(); }
 
-  void createAdjacencyGraph(const MinImg *image);
-  void createAdjacencyGraph(const MinImg * image,
-                            const ImageMap  * _imageMap);
+  void createAdjacencyGraph(const Image &image);
+  void createAdjacencyGraph(const Image &image,
+                            const ImageMap &imageMap);
 
 };
 
@@ -208,6 +211,26 @@ void Segmentator<T>::enumerateSegments(std::map<T *, int> &emap)
   for (int i = 0; i < sizeOfVertices; i++)
     if (vertices[i].exists())
       emap.insert(std::make_pair<T *, int>(&vertices[i], n++));
+}
+
+template<typename T>
+bool Segmentator<T>::dumpAllSegments(const char *fileName, const Image &image)
+{
+  std::ofstream f(fileName);
+  if (!f)
+    return false;
+  updateMapping();
+  for (int i = 0; i < image.getWidth(); i++)
+    for (int j = 0; j < image.getHeight(); j++)
+    {
+      const uint8_t *pixel = image.getPixel(i, j);
+      for (int k = 0; k < image.getChannelsNum(); k++, pixel++)
+        f << *pixel << ' ';
+      f << imageMap->getSegment(i,j) << std::endl;
+      if (!f)
+        return false;
+    }
+  return true;
 }
 
 template<typename T>
@@ -264,56 +287,70 @@ bool Segmentator<T>::areConnected(const T *v1, const T *v2) const
 }
 
 template<typename T>
-Segmentator<T>::Segmentator(const MinImg * image,
-                            ErrorFunction ef,
-                            WeightFunction df,
+bool Segmentator<T>::dumpSegment(T *v, Points &points)
+{
+  assert(v and !isEmpty());
+
+  // LOG_INFO("Dumping segment " << v - vertices);
+  // LOG_INFO("R = " << v->channelsSum[0] / v->area << "  G = " << v->channelsSum[1] / v->area << "  B = " << v->channelsSum[2] / v->area << "  Area = " << v->area);
+
+  if (!goodVertex(v))
+    throw std::runtime_error("goodVertex() failed");
+
+  SegmentID vID = getId(v);
+
+  for (int j = 0; j < imageMap->getHeight(); j++)
+    for (int i = 0; i < imageMap->getWidth(); i++)
+      if (imageMap->getSegment(i,j) == vID)
+        points.push_back(Point(i,j));
+  return true;
+}
+
+template<typename T>
+Segmentator<T>::Segmentator(const Image &image,
+                            EdgeValue (*ef)(const T *v),
+                            EdgeValue (*df)(const T *v1, const T *v2),
                             bool _normalize)
   : error_function(ef)
-  , weight_function(df)
-  , channelsNum(image->channels)
+  , distance_function(df)
+  , channelsNum(image.getChannelsNum())
   , normalize(_normalize)
 {
-  if (image->channelDepth != 4 && image->format != FMT_REAL)
-    throw std::runtime_error("Unsupported image type. Only TYP_REAL32 is supported");
-
-  imageMap = new ImageMap(image->width, image->height);
+  imageMap = new ImageMap(image.getWidth(), image.getHeight());
 
   createAdjacencyGraph(image);
 }
 
 template<typename T>
-Segmentator<T>::Segmentator(const MinImg * image,
-                            const ImageMap * _imageMap,
-                            ErrorFunction ef,
-                            WeightFunction df,
-                            std::set<std::pair<int, int> > const & _lockList,
-                            bool _locking_policy,
+Segmentator<T>::Segmentator(const Image &image,
+                            const ImageMap& _imageMap,
+                            EdgeValue (*ef)(const T *v),
+                            EdgeValue (*df)(const T *v1, const T *v2),
+                            std::set<std::pair<int, int> > const & _blockList,
+                            bool _blocking_policy,
                             bool _normalize)
   : error_function(ef)
-  , weight_function(df)
-  , channelsNum(image->channels)
-  , lockList(_lockList)
-  , locking_policy(_locking_policy)
+  , distance_function(df)
+  , channelsNum(image.getChannelsNum())
+  , blockList(_blockList)
+  , blocking_policy(_blocking_policy)
   , normalize(_normalize)
 {
-  if (image->channelDepth != 4 && image->format != FMT_REAL)
-    throw std::runtime_error("Unsupported image type. Only TYP_REAL32 is supported");
+  imageMap = new ImageMap(image.getWidth(), image.getHeight());
 
-  imageMap = new ImageMap(image->width, image->height);
-
-  if (_imageMap->getWidth() != image->width || _imageMap->getHeight() != image->height)
+  if (_imageMap.getWidth() != image.getWidth() || _imageMap.getHeight() != image.getHeight())
     throw std::runtime_error("ImageMap size is inconsistent with image");
 
   createAdjacencyGraph(image, _imageMap);
 }
 
 template<typename T>
-void Segmentator<T>::createAdjacencyGraph(const MinImg * image)
+void Segmentator<T>::createAdjacencyGraph(const Image &image)
 {
   // LOG_INFO("Creating adjacency graph...");
 
-  const int width = image->width;
-  const int height = image->height;
+  const int width = image.getWidth();
+  const int height = image.getHeight();
 
   initialize(width*height, 2*width*height - width - height);
 
@@ -323,9 +360,9 @@ void Segmentator<T>::createAdjacencyGraph(const MinImg * image)
   for (j = 0, v = vertices; j < height; j++)
     for (i = 0; i < width; i++, v++)
     {
+      const uint8_t *pix = image.getPixel(i, j);
       SegmentID id = getId(v);
       (*imageMap)(i,j) = id;
-      const float *pix = GetMinImageLineAs<real32_t>(image, j) + i * image->channels;
       v->update(pix);
     }
 
@@ -342,10 +379,10 @@ void Segmentator<T>::createAdjacencyGraph(const MinImg * image)
 }
 
 template<typename T>
-void Segmentator<T>::createAdjacencyGraph(const MinImg * image,
-                                          const ImageMap * _imageMap)
+void Segmentator<T>::createAdjacencyGraph(const Image &image,
+                                          const ImageMap & _imageMap)
 {
-  auto const stats = _imageMap->getSegmentStats();
+  auto const stats = _imageMap.getSegmentStats();
   std::map<SegmentID, SegmentID> id_to_idx;
   SegmentID idx = 0;
   for (auto const & stat : stats)
@@ -366,18 +403,18 @@ void Segmentator<T>::createAdjacencyGraph(const MinImg * image,
     T *v = vertices + idx;
 
     for (int i = rect.y; i < rect.y + rect.height; ++i)
+    {
       for (int j = rect.x; j < rect.x + rect.width; ++j)
       {
-        if (_imageMap->getSegment(j, i) != stat.first)
+        if (_imageMap.getSegment(j, i) != stat.first)
           continue;
-
-        const float_t *pix = GetMinImageLineAs<float_t>(image, i) + j * image->channels;
-        v->update(pix);
+        v->update(image.getPixel(j, i));
         (*imageMap)(j,i) = idx;
       }
+    }
 
-    if (std::find(lockList.begin(), lockList.end(), stat.second.leftTopPoint) != lockList.end())
-        v->isLocked = true;
+    if (std::find(blockList.begin(), blockList.end(), stat.second.leftTopPoint) != blockList.end())
+        v->isBlocked = true;
 
     errorAccumulator += calcError(v);
   }
@@ -387,14 +424,14 @@ void Segmentator<T>::createAdjacencyGraph(const MinImg * image,
     idx = id_to_idx[stat.first];
     T *v = vertices + idx;
 
-    if (v->isLocked)
+    if (v->isBlocked)
       continue;
 
     for (auto const & n : stat.second.neighbours)
     {
       if (idx >= id_to_idx[n])
         continue; // call connect() only once for each pair
-      if ((vertices + id_to_idx[n])->isLocked)
+      if ((vertices + id_to_idx[n])->isBlocked)
         continue;
       connect(v, vertices + id_to_idx[n], true);
     }
@@ -405,19 +442,19 @@ void Segmentator<T>::createAdjacencyGraph(const MinImg * image,
     idx = id_to_idx[stat.first];
     T *v = vertices + idx;
 
-    if (v->isLocked)
+    if (v->isBlocked)
       continue;
 
     for (auto const & n : stat.second.neighbours)
     {
       if (idx >=id_to_idx[n])
         continue; // call connect() only once for each pair
-      if ((vertices + id_to_idx[n])->isLocked)
+      if ((vertices + id_to_idx[n])->isBlocked)
         continue;
       for (Joint it = v->begin(); it != v->end(); it++)
         if (it->vertex == (vertices + id_to_idx[n]))
         {
-          edgeHeap->update(it->edge, weight_function(v, vertices + id_to_idx[n]));
+          edgeHeap->update(it->edge, distance_function(v, vertices + id_to_idx[n]));
           break;
         }
     }
@@ -438,10 +475,10 @@ void Segmentator<T>::connect(T *a, T *b, bool dummy)
   jointA->joint = jointB;
   jointB->joint = jointA;
 
-  double weight = 0;
+  double dist = 0;
   if (!dummy)
-    weight = weight_function(a, b);
-  edgeHeap->push(Edge(a, b, weight, jointA, jointB));
+    dist = distance_function(a, b);
+  edgeHeap->push(Edge(a, b, dist, jointA, jointB));
 }
 
 template<typename T>
@@ -474,7 +511,7 @@ void Segmentator<T>::mergeNext(bool do_update_mapping)
 }
 
 template<typename T>
-int Segmentator<T>::mergeToLimitCycle(EdgeValue weightLimit, EdgeValue errorLimit, int segmentsLimit,
+int Segmentator<T>::mergeToLimitCycle(EdgeValue distanceLimit, EdgeValue errorLimit, int segmentsLimit,
                                       i8r::PLogger dbg, int debug_iter, int maxSegments)
 {
   assert(!isEmpty());
@@ -483,7 +520,7 @@ int Segmentator<T>::mergeToLimitCycle(EdgeValue weightLimit, EdgeValue errorLimi
 
   double EPS = 1e-5;
 
-  bool noWeightLimit = weightLimit < EPS;
+  bool noDistanceLimit = distanceLimit < EPS;
   bool noErrorLimit = errorLimit < EPS;
   bool noSegmentsLimit = segmentsLimit < 0;
   maxSegments = maxSegments < 0 ? imageMap->getWidth() * imageMap->getHeight() : maxSegments;
@@ -492,7 +529,7 @@ int Segmentator<T>::mergeToLimitCycle(EdgeValue weightLimit, EdgeValue errorLimi
   int N = normalize ? imageMap->getWidth() * imageMap->getHeight() : 1;
 
   while ((topEdge = edgeHeap->top()) and
-         (noWeightLimit or topEdge->value < weightLimit) and
+         (noDistanceLimit or topEdge->value < distanceLimit) and
          (noErrorLimit or (errorAccumulator + std::pow(topEdge->value, 2)) / N
                           < std::pow(errorLimit, 2)) and
          (noSegmentsLimit or numberOfSegments() > segmentsLimit))
@@ -502,8 +539,8 @@ int Segmentator<T>::mergeToLimitCycle(EdgeValue weightLimit, EdgeValue errorLimi
       return MERGE_BREAK;
     }
 
-    double weight = topEdge->value;
-    errorAccumulator += std::pow(weight, 2);
+    double dist = topEdge->value;
+    errorAccumulator += std::pow(dist,2);
     mergeNext(false);
 
     if (!dbg)
@@ -515,8 +552,8 @@ int Segmentator<T>::mergeToLimitCycle(EdgeValue weightLimit, EdgeValue errorLimi
       DECLARE_GUARDED_MINIMG(vis);
       visualize(&vis, *imageMap);
       dbg->save(std::to_string(i) + "_" +
-                weight_to_string(std::sqrt(errorAccumulator / N)) + "_" +
-                weight_to_string(weight) + "_" +
+                dist_to_string(std::sqrt(errorAccumulator / N)) + "_" +
+                dist_to_string(dist) + "_" +
                 std::to_string(vertexNum), "segm", &vis, "");
     }
     i++;
@@ -528,20 +565,20 @@ int Segmentator<T>::mergeToLimitCycle(EdgeValue weightLimit, EdgeValue errorLimi
 }
 
 template<typename T>
-int Segmentator<T>::mergeToLimit(EdgeValue weightLimit, EdgeValue errorLimit, int segmentsLimit,
+int Segmentator<T>::mergeToLimit(EdgeValue distanceLimit, EdgeValue errorLimit, int segmentsLimit,
                                  i8r::PLogger dbg, int debug_iter, int maxSegments)
 {
   assert(!isEmpty());
   int result = MERGE_OK;
 
-  if (locking_policy == LOCK_SEGMENTS)
+  if (blocking_policy == BLOCK_SEGMENTS)
   {
-    result = mergeToLimitCycle(weightLimit, errorLimit, segmentsLimit, dbg, debug_iter, maxSegments);
+    result = mergeToLimitCycle(distanceLimit, errorLimit, segmentsLimit, dbg, debug_iter, maxSegments);
     if (result != MERGE_OK)
       return result;
   }
 
-  if (!lockList.empty() || locking_policy == LOCK_EDGES)
+  if (!blockList.empty() || blocking_policy == BLOCK_EDGES)
   {
     updateMapping(true);
     for (auto const & stat : imageMap->getSegmentStats())
@@ -549,11 +586,11 @@ int Segmentator<T>::mergeToLimit(EdgeValue weightLimit, EdgeValue errorLimit, in
       int id = stat.first;
       T *v = &vertices[id];
       for (auto const & n : stat.second.neighbours)
-        if (vertices[n].isLocked != v->isLocked)
+        if (vertices[n].isBlocked != v->isBlocked)
           connect(v, &vertices[n]);
     }
 
-    result = mergeToLimitCycle(weightLimit, errorLimit, segmentsLimit, dbg, debug_iter, maxSegments);
+    result = mergeToLimitCycle(distanceLimit, errorLimit, segmentsLimit, dbg, debug_iter, maxSegments);
     if (result != MERGE_OK)
       return result;
   }
@@ -626,7 +663,7 @@ void Segmentator<T>::merge(T *absorbent, T *v)
   bool connected = false;	// были ли соединены v и absorbent? (нужно для выявления ошибок)
   absorbent->absorb(v);
 
-  EdgeValue weight = -1;
+  EdgeValue dist = -1;
 
   for (Joint it = absorbent->begin(); it != absorbent->end(); it++)    // помечаем соседей absorbent для последующего выявления дублей
     mergeAuxArray[getId(reinterpret_cast<T*>(it->vertex))] = stepNumber;
@@ -641,7 +678,7 @@ void Segmentator<T>::merge(T *absorbent, T *v)
     if (it->vertex == absorbent)
     {
       connected = true;
-      weight = it->edge->value;
+      dist = it->edge->value;
       absorbent->erase(it->joint);
       edgeHeap->remove(it->edge);
     }
@@ -676,9 +713,9 @@ void Segmentator<T>::merge(T *absorbent, T *v)
 
   // пересчет весов ребер absorbent
   for (Joint it = absorbent->begin(); it != absorbent->end(); it++)
-    edgeHeap->update(it->edge, weight_function(absorbent, reinterpret_cast<T*>(it->vertex)));
+    edgeHeap->update(it->edge, distance_function(absorbent, reinterpret_cast<T*>(it->vertex)));
 
-  	// LOG_INFO(absorbent-vertices << " has absorbed " << v-vertices << " (weight " << weight << ")");
+  	// LOG_INFO(absorbent-vertices << " has absorbed " << v-vertices << " (distance " << dist << ")");
 
   assert(connected);	// объединяемые вершины должны были быть соединены
 
@@ -767,7 +804,7 @@ void Segmentator<T>::saveLog(std::string const & filename)
     for (auto const& n : stat.second.neighbours)
     {
       T* v_n = vertices + n;
-      segment["scores"].append(weight_function(vertex, v_n));
+      segment["scores"].append(distance_function(vertex, v_n));
     }
     segment["statistics"] = vertex->jsonLog();
     root["segments"][std::to_string(id)] = segment;

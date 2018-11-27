@@ -37,17 +37,17 @@ either expressed or implied, of copyright holders.
 
 namespace vi { namespace colorseg {
 
-float ColorVertex::homographyA = 0.0;
-float ColorVertex::homographyK = 3.0;
-float ColorVertex::LTDistance = 20;
+double ColorVertex::homographyA = 0.0;
+double ColorVertex::homographyK = 3.0;
+double ColorVertex::maxModelDistance = 20;
 
 ColorVertex::ColorVertex(const ColorVertex* v)
 : Vertex(v)
 {
-  channelsSumOfSquares = new double* [channelsNum];
+  channelsSumOfSquares = new long double* [channelsNum];
   for (int i = 0; i < channelsNum; i++)
   {
-    channelsSumOfSquares[i] = new double[channelsNum];
+    channelsSumOfSquares[i] = new long double[channelsNum];
     for (int j = 0; j < channelsNum; j++)
       channelsSumOfSquares[i][j] = v->channelsSumOfSquares[i][j];
   }
@@ -67,30 +67,30 @@ ColorVertex::~ColorVertex()
 
 void ColorVertex::Initialize(int _channelsNum)
 {
-  Vertex::Initialize(_channelsNum);
+    Vertex::Initialize(_channelsNum);
 
-	channelsSumOfSquares = new double* [channelsNum];
+	channelsSumOfSquares = new long double* [channelsNum];
 	for (int i = 0; i < channelsNum; i++)
 	{
-		channelsSumOfSquares[i] = new double[channelsNum];
+		channelsSumOfSquares[i] = new long double[channelsNum];
 		for (int j = 0; j < channelsNum; j++)
 			channelsSumOfSquares[i][j] = 0;
 	}
 }
 
-void ColorVertex::update(const float_t * pix)
+void ColorVertex::update(const uint8_t * pix)
 {
-  float pix_proj[3] = {0, 0, 0};
-  homography(pix_proj, pix);
-  Vertex::update(pix_proj);
+  double pixd[3] = {(double)pix[0], (double)pix[1], (double)pix[2]};
+  homography(pixd, pix, homographyA, homographyK);
+  Vertex::update(pixd);
 
-	Eigen::Vector3f pix_vec(pix_proj[0], pix_proj[1], pix_proj[2]);
-	Eigen::Matrix3f pix_sq_mat = pix_vec * pix_vec.transpose();
+	Eigen::Vector3d pix_vec(pixd[0], pixd[1], pixd[2]);
+	Eigen::Matrix3d pix_sq_mat = pix_vec * pix_vec.transpose();
 	for (int i = 0; i < channelsNum; ++i)
 		for (int j = 0; j < channelsNum; ++j)
-			channelsSumOfSquares[i][j] += pix_sq_mat(i, j);
+			channelsSumOfSquares[i][j] += (long double)pix_sq_mat(i, j);
 
-  needToUpdate = true;
+    needToUpdate = true;
 }
 
 void ColorVertex::absorb(Vertex *v)
@@ -102,14 +102,14 @@ void ColorVertex::absorb(Vertex *v)
 		for (int j = 0; j < channelsNum; j++)
 			channelsSumOfSquares[i][j] += cv->channelsSumOfSquares[i][j];
 
-  needToUpdate = true;
+    needToUpdate = true;
 }
 
 const ColorVertex::HelperStats & ColorVertex::getHelperStats() const
 {
-  if (needToUpdate)
-    updateHelperStats();
-  return helperStats;
+    if (needToUpdate)
+        updateHelperStats();
+    return helperStats;
 }
 
 void ColorVertex::updateHelperStats() const

@@ -31,16 +31,15 @@ either expressed or implied, of copyright holders.
 */
 
 
-#include <remseg/weight_func.h>
+#include <remseg/distance_func.h>
 
 #include <cassert>
-#include <cmath>
 
 namespace vi { namespace remseg {
 
-EdgeValue student_error(const Vertex *v) { return 0; }
+inline double sqr(double x)	{ return x * x; }
 
-EdgeValue student_weight(const Vertex *v1, const Vertex *v2)
+EdgeValue student_distance(const Vertex *v1, const Vertex *v2)
 {
   assert(v1->channelsNum == v2->channelsNum);
   double s = 0;
@@ -48,7 +47,7 @@ EdgeValue student_weight(const Vertex *v1, const Vertex *v2)
   {
     double mean1 = double(v1->channelsSum[i]) / v1->area;
     double mean2 = double(v2->channelsSum[i]) / v2->area;
-    s += std::pow(mean1 - mean2, 2);
+    s += sqr(mean1 - mean2 + 0.5);
   }
 	return s * v1->area * v2->area / (v1->area + v2->area);
 }

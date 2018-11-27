@@ -8,8 +8,8 @@ find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 add_library(colorseg
+  src/color_distance_func.cpp
   src/color_vertex.cpp
-  src/color_weight_func.cpp
 )
 
 target_include_directories(remseg
@@ -20,7 +20,6 @@ target_include_directories(remseg
 )
 
 target_link_libraries(colorseg
-  mximg
   remseg
 )
 
