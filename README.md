@@ -3,7 +3,7 @@
 Here we publish a set of image segmentation libraries developed for the research in a [Vision System Laboratory at IITP RAS](http://iitp.ru/en/researchlabs/281.htm). Currently this not very big collection includes the following:
 
 * [remseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/remseg) — region adgacency graph (RAG) framework
-* [colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) — color-based segmentation
+* [colorseg](https://github.com/Visillect/segmentation/tree/master/vi_packages/colorseg) — color-based segmentation, details have been published in [Linear colour segmentation revisited, SPIE, 2019](https://spie.org/Publications/Proceedings/Paper/10.1117/12.2523007?SSO=1).
 
 ## Getting started
 
